@@ -51,6 +51,7 @@ const ROUTES = [
   ['POST', /^\/v1\/auth\/login\/verify$/, loginVerify],
   ['POST', /^\/v1\/auth\/claim\/options$/, claimOptions],
   ['POST', /^\/v1\/auth\/claim\/verify$/, claimVerify],
+  ['POST', /^\/v1\/auth\/claim\/merge$/, claimMerge],
   ['POST', /^\/v1\/auth\/logout$/, logout],
   ['GET', /^\/v1\/me$/, me],
   ['POST', /^\/v1\/agent\/guest$/, startGuest],
@@ -227,6 +228,21 @@ async function claimVerify(c) {
   // of matching, and the summaries expire within 72 hours.
   if (result.forget.length) await dispatch(c.env, { keys: result.forget, at: Date.now() }, '/jobs/forget').catch((error) => console.error(`forget on save: ${error.message}`));
   return json({ session: session.token, user: pending.user }, 201);
+}
+
+// A member signed in with their passkey takes a guest account's cards into
+// their own account instead of saving it as a second one: they hold its
+// claim code (its save link, or the guest account in their browser).
+async function claimMerge(c) {
+  await rateLimit(c, 'claim', 60);
+  // (The body first, so a sign-in checked now cannot be used after it ends.)
+  const { claim } = (await readJson(c.request, 1024)) ?? {};
+  const member = await requireSession(c);
+  const hash = typeof claim === 'string' && /^[\w-]{43}$/.test(claim) ? await sha256(claim) : null;
+  const result = hash ? await c.registry.mergeGuest({ claim: hash, owner: member.owner }, Date.now()) : { ok: false, code: 'bad_claim', message: 'This guest account has already been saved or moved, or the link has expired.' };
+  if (!result.ok) throw new ApiError(result.code === 'bad_claim' ? 404 : 409, result.code, result.message);
+  if (result.forget.length) await dispatch(c.env, { keys: result.forget, at: Date.now() }, '/jobs/forget').catch((error) => console.error(`forget on merge: ${error.message}`));
+  return json({ moved: result.moved });
 }
 
 function newUser() {
@@ -631,8 +647,20 @@ async function cardStatus(c, id) {
   await readLimit(c);
   const card = await readCard(c, id);
   if (!card) throw new ApiError(404, 'not_found', 'No card with that id.');
-  // Which renderer makes it, for the app's notes on the software behind each stage.
-  return json({ ...publicCard(card, c.base), renderer: rendererKind(c.env) });
+  // Which renderer makes it, for the app's notes on the software behind each
+  // stage, and, once it is ready, the pages of its story for the app to show
+  // (the same text its public page shows).
+  return json({ ...publicCard(card, c.base), renderer: rendererKind(c.env), ...(card.status === 'ready' ? { story: storyOf(card.concept) } : {}) });
+}
+
+function storyOf(concept) {
+  if (!concept) return null;
+  const text = ['era', 'product_name', 'tagline', 'pitch', 'archetype', 'reading', 'stat_value', 'stat_label', 'rabbit_hole', 'era_match', 'artist', 'artist_reason'];
+  return {
+    ...Object.fromEntries(text.filter((key) => typeof concept[key] === 'string').map((key) => [key, concept[key]])),
+    reasons: (concept.reasons ?? []).map(({ you, so }) => ({ you, so })),
+    catalogue: (concept.catalogue ?? []).map(({ name, era, teaser }) => ({ name, era, teaser })),
+  };
 }
 
 // 'phala' for the Phala-hosted render service, 'local' for one on this
@@ -1018,7 +1046,7 @@ function publicFusion(fusion, viewer, cards, base) {
     from: face(fusion.a.card_id),
     to: face(fusion.b.card_id),
     card: fusion.card_id ? { id: fusion.card_id, status_url: `${base}/v1/cards/${fusion.card_id}`, page_url: `${base}/c/${fusion.card_id}/` } : null,
-    upload_needed: fusion.status === 'waiting_summary' && fusion.b.owner === viewer,
+    upload_needed: fusion.status === 'waiting_summary' && fusion.b.owner === viewer && !fusion.b.card_id,
     created_at: new Date(fusion.created_at).toISOString(),
   };
 }
@@ -1026,9 +1054,12 @@ function publicFusion(fusion, viewer, cards, base) {
 // accept/decline: the partner answers a request from the pool. start: the
 // friend who joined through a fusion invite, once their summary is sealed.
 async function decideFusion(c, id, action) {
-  const member = action === 'decline' ? await requireMember(c) : await requireSession(c);
+  const member = await requireMember(c);
   const fusion = await c.registry.fusion(id);
   if (!fusion || fusion.b.owner !== member.owner) throw new ApiError(404, 'not_found', 'No such fusion request for you.');
+  // Accepting a request spends a sealed summary, as does starting a fusion
+  // without a card of the friend's: those take the person's passkey session.
+  if (action === 'accept' || (action === 'start' && !fusion.b.card_id)) sessionOnly(member);
   // The invited friend may also decline while their summary is still to come.
   const from = action === 'start' ? 'waiting_summary' : action === 'decline' && fusion.status === 'waiting_summary' ? 'waiting_summary' : 'pending';
   if (fusion.status !== from) throw new ApiError(409, 'not_pending', `This fusion is ${fusion.status.replace('_', ' ')}.`);
@@ -1038,7 +1069,7 @@ async function decideFusion(c, id, action) {
     if (fusion.b.summary_key?.startsWith('fusion:')) await dispatch(c.env, { keys: [fusion.b.summary_key], at: Date.now() }, '/jobs/forget').catch((error) => console.error(`forget ${short(id)}: ${error.message}`));
     return json({ ok: true, status: 'declined' });
   }
-  if (action === 'start' && !(await sealed(c, [fusion.b.summary_key])).has(fusion.b.summary_key)) {
+  if (action === 'start' && !fusion.b.card_id && !(await sealed(c, [fusion.b.summary_key])).has(fusion.b.summary_key)) {
     throw new ApiError(409, 'no_summary', 'Upload your summary to the enclave first (the upload link from accepting the invite).');
   }
   const claimed = await c.registry.advanceFusion(id, from, { status: 'starting', updated_at: Date.now() });
@@ -1057,7 +1088,8 @@ async function decideFusion(c, id, action) {
 async function fusionUpload(c, id) {
   const member = await requireSession(c);
   const fusion = await c.registry.fusion(id);
-  if (!fusion || fusion.b.owner !== member.owner || fusion.status !== 'waiting_summary') throw new ApiError(404, 'not_found', 'No fusion of yours is waiting for a summary.');
+  // (One made from the friend's card needs no summary: it is started again instead.)
+  if (!fusion || fusion.b.owner !== member.owner || fusion.status !== 'waiting_summary' || fusion.b.card_id) throw new ApiError(404, 'not_found', 'No fusion of yours is waiting for a summary.');
   enclavePublic(c);
   await limit(c, `fusion-upload:${id}`, 10, DAY, 'That is a lot of upload links for one fusion. Try again tomorrow.');
   return json({ upload: await summaryUpload(c, fusion.b.summary_key, member.owner, 24), start_url: `${c.base}/v1/fusions/${id}/start` });
@@ -1116,7 +1148,8 @@ async function inviteToFuse(c, id) {
   if (card.status !== 'ready') throw new ApiError(409, 'not_ready', 'Invite someone once the card is ready.');
   const app = appOrigin(c);
   // Each fusion invite also lets one newcomer join, so members get a daily allowance.
-  if (!(await c.registry.hit(`fusion-invites:${member.owner}`, 30, DAY, Date.now()))) throw new ApiError(429, 'rate_limited', 'You have made a lot of invites today. Try again tomorrow.');
+  // (A guest, as many as the cards it may make in a day.)
+  if (!(await c.registry.hit(`fusion-invites:${member.owner}`, member.event ? GUEST_CARDS : 30, DAY, Date.now()))) throw new ApiError(429, 'rate_limited', 'You have made a lot of invites today. Try again tomorrow.');
   const code = randomCode(INVITE_ALPHABET, 8);
   const now = Date.now();
   const expires = now + DAY;
@@ -1139,31 +1172,51 @@ async function fusionInviteInfo(c, value) {
   return json({ card: partnerCard(card, c.base), expires_at: new Date(invite.expires_at).toISOString() });
 }
 
-// The friend (signed in, perhaps just now with this same code) claims the
-// invite and gets a one-use link to seal their summary in the enclave; then
-// POST /v1/fusions/:id/start makes the shared card.
+// The friend claims the invite. With one of their own cards (`card_id`), the
+// shared card is written from the two cards and starts at once: no summary
+// is spent, so any of their sign-ins will do (a guest's, or their
+// assistant's). Without one, they get a one-use link to seal their summary in
+// the enclave, which takes their passkey session; then POST
+// /v1/fusions/:id/start makes the shared card.
 async function acceptFusionInvite(c, value) {
-  const { name } = (await readJson(c.request, 1024)) ?? {};
-  const member = await requireSession(c);
+  const { name, card_id: cardId } = (await readJson(c.request, 1024)) ?? {};
+  const member = cardId === undefined ? await requireSession(c) : await requireMember(c);
   const invite = await openFusionInvite(c, value);
-  enclavePublic(c);
+  const own = cardId === undefined ? null : await ownedCard(c, String(cardId), member);
+  if (own && !own.concept) throw new ApiError(409, 'not_ready', 'That card has nothing to fuse yet. Try again once it is being made.');
+  if (!own) enclavePublic(c);
   const friendName = cardName(name, 'bad_request');
   const now = Date.now();
-  if (!(await c.registry.hit(`fusion-claims:${member.owner}`, 30, DAY, now))) throw new ApiError(429, 'rate_limited', 'You have joined a lot of fusions today. Try again tomorrow.');
+  // A shared card made at once needs a place in today's cards, checked before the invite is spent.
+  if (own) {
+    const { cards_per_day, used_today } = await c.registry.capStatus(now);
+    if (used_today >= cards_per_day) throw new ApiError(429, 'daily_cap', `ZKAds has made all ${cards_per_day} of today's cards. The limit resets at midnight UTC.`);
+  }
+  // (A guest, as many as the cards it may make in a day: a shared card is a card.)
+  if (!(await c.registry.hit(`fusion-claims:${member.owner}`, member.event ? GUEST_CARDS : 30, DAY, now))) throw new ApiError(429, 'rate_limited', 'You have joined a lot of fusions today. Try again tomorrow.');
   const inviter = await c.registry.card(invite.card_id);
   // Its owner deleted it: nothing to fuse with, so the invite stays unused.
   if (!inviter) throw new ApiError(404, 'not_found', 'The card behind this invite is gone.');
+  const id = cardIdValue();
   const fusion = {
-    id: cardIdValue(),
-    status: 'waiting_summary',
+    id,
+    status: own ? 'starting' : 'waiting_summary',
     a: { card_id: invite.card_id, owner: invite.owner, summary_key: invite.by_session && matchingOpen(inviter) ? `card:${invite.card_id}` : null },
-    b: { card_id: null, owner: member.owner, name: friendName },
+    b: { card_id: own?.id ?? null, owner: member.owner, name: friendName, summary_key: own ? null : `fusion:${id}` },
     created_at: now,
     updated_at: now,
   };
-  fusion.b.summary_key = `fusion:${fusion.id}`;
   const claimed = await c.registry.claimFusionInvite(await sha256(inviteCode(value)), member.owner, fusion, now);
   if (!claimed.ok) throw new ApiError(409, claimed.code, claimed.message);
+  if (own) {
+    try {
+      return json({ fusion_id: id, card: publicCard(await startFusion(c, fusion), c.base) }, 202);
+    } catch (error) {
+      // Nothing was made, so the friend can start it again (POST /v1/fusions/:id/start).
+      await c.registry.advanceFusion(id, 'starting', { status: 'waiting_summary', updated_at: Date.now() });
+      throw error;
+    }
+  }
   return json({ fusion_id: fusion.id, upload: await summaryUpload(c, fusion.b.summary_key, member.owner, 24), start_url: `${c.base}/v1/fusions/${fusion.id}/start`, summary_prompt_url: `${c.base}/v1/summary-prompt` }, 201);
 }
 
@@ -1475,7 +1528,10 @@ async function requireMember(c) {
 
 // Only a passkey session, never an agent, may approve agents.
 async function requireSession(c) {
-  const record = await requireMember(c);
+  return sessionOnly(await requireMember(c));
+}
+
+function sessionOnly(record) {
   if (record.scope !== 'session') throw new ApiError(403, 'forbidden', record.event ? 'This is a guest account: save it with a passkey first (the claim link from signing in with the event code, or "Save" in the web app), then do this on the ZKAds site.' : 'Sign in with your passkey on the ZKAds site to do this.');
   return record;
 }

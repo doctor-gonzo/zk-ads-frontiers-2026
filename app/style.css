@@ -44,10 +44,17 @@ nav { display: flex; align-items: center; gap: 6px; }
 .account.pending { visibility: hidden; }
 .about-link { display: inline-grid; place-items: center; width: 44px; height: 44px; margin-right: -6px; color: var(--ink); border-radius: 50%; }
 .about-link svg { width: 30px; height: 30px; }
+/* "save your cards" fits beside the logo on a phone. */
+@media (max-width: 430px) {
+  .brand img { height: 30px; }
+  .account { padding: 0 10px; gap: 6px; font-size: 15px; }
+  .account svg { width: 20px; height: 20px; }
+}
 @media (max-width: 359px) {
   :root { --gutter: 16px; }
   .brand img { height: 28px; }
-  .account { padding: 0 12px; gap: 8px; }
+  .account { padding: 0 8px; gap: 0; font-size: 14px; }
+  .account svg { display: none; }
   .story-nav.prev { left: -14px; }
   .story-nav.next { right: -14px; }
 }
@@ -218,8 +225,12 @@ dialog.modal::backdrop { background: rgba(20, 20, 19, .5); }
 .about { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
 .summary p { font-size: clamp(20px, 5.3vw, 30px); line-height: 1.38; margin: 0 0 20px; }
 .about .side { border-top: 1px solid var(--ink); padding-top: 24px; }
-.badge-fig { margin: 0; }
-.badge-fig img { display: block; width: 100%; max-width: 480px; height: auto; aspect-ratio: 572 / 854; object-fit: contain; }
+.badge-fig { position: relative; display: block; width: fit-content; max-width: 100%; margin: 0; border-radius: 6px; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .6s cubic-bezier(.2, .8, .2, 1), box-shadow .6s; box-shadow: var(--sx, 0px) var(--sy, 18px) 44px -18px rgba(20, 20, 19, .5); will-change: transform; }
+.badge-fig.tilting { transition: transform .08s linear, box-shadow .08s linear; }
+.badge-fig img { display: block; width: 100%; max-width: 480px; height: auto; aspect-ratio: 572 / 854; object-fit: contain; border-radius: inherit; }
+/* A soft sheen always, and a highlight that follows the pointer while it tilts. */
+.badge-fig .glare { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(circle at var(--gx, 30%) var(--gy, 20%), rgba(255, 255, 255, .5), rgba(255, 255, 255, 0) 55%), linear-gradient(135deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, .12)); mix-blend-mode: soft-light; opacity: .55; transition: opacity .5s; }
+.badge-fig.tilting .glare { opacity: 1; }
 .links { display: flex; flex-wrap: wrap; gap: 4px 28px; margin: 12px 0 0; font-size: 18px; }
 .links a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; text-decoration: underline; }
 .links a svg { width: 16px; height: 16px; }
@@ -232,6 +243,8 @@ dialog.modal::backdrop { background: rgba(20, 20, 19, .5); }
   .summary { grid-area: summary; }
   .overlap { grid-area: overlap; }
   .about .side { grid-area: side; grid-column: 2; padding: 4px 0 0 48px; border-top: 0; border-left: 1px solid var(--ink); align-self: stretch; }
+  /* The badge leaves room for the links below it on one screen. */
+  .badge-fig img { width: auto; max-width: 100%; max-height: calc(100vh - 360px); min-height: 280px; }
 }
 
 /* Rendering: the stages from the card's real status. */
@@ -271,6 +284,19 @@ input:focus, textarea:focus { outline: 2px solid var(--ink); outline-offset: 1px
 .cards li > a:first-child { font-size: 19px; }
 .cards li .row { margin-top: 0; }
 .cards button.secondary { min-height: 40px; padding: 0 14px; font-size: 15px; }
+/* The account list: each card with a small still of it. */
+.account-cards .with-thumb { display: inline-flex; align-items: center; gap: 12px; }
+.account-cards .thumb { flex: none; width: 42px; height: 56px; border-radius: 3px; object-fit: cover; background: var(--hair); }
+/* A ready card: its story card, then its actions. */
+.card-story { margin: 0 0 6px; }
+/* A real card's media is tall (768 × 1344), so its story card takes that shape and shows all of it. */
+.card-story .story { aspect-ratio: 768 / 1344; width: min(100%, 420px); }
+.card-story .example-head, .card-story .story-count { width: min(100%, 420px); }
+/* Centred on every screen; its front has the card's own shading, and a long page scrolls rather than clips. */
+.card-story .story, .card-story .example-head, .card-story .story-count { margin-left: auto; margin-right: auto; }
+.card-story .story .front::before, .card-story .story .front::after { display: none; }
+.card-story .story .sheet { overflow-y: auto; justify-content: flex-start; }
+.ready-actions { justify-content: center; }
 .badge { font: 500 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .badge.ready { color: var(--good); }
 .badge.failed { color: var(--bad); }

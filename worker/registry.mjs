@@ -312,6 +312,9 @@ export class Registry extends DurableObject {
     if (!proof || proof.status !== 'pending') return { ok: false };
     // One started before its guest account was saved came from whoever held the guest sign-in then.
     const owner = proof.owner?.startsWith('user:') ? await this.user(proof.owner.slice(5)) : null;
+    const held = await this.card(proof.card_id);
+    // So did one whose card has since moved to another account.
+    if (result.status === 'verified' && held && ![held.owner, held.co_owner].includes(proof.owner)) result = { status: 'failed', error: 'This card moved to another account after the proof started. Start a new one.' };
     if (result.status === 'verified' && owner?.claimed_at && !(proof.created_at >= owner.claimed_at)) result = { status: 'failed', error: 'This proof was started before the account was saved. Start a new one.' };
     await this.ctx.storage.put(`proof:${session}`, { ...proof, status: result.status, badge: result.badge ?? null, error: result.error ?? null });
     if (result.status !== 'verified') return { ok: true, card: null };
@@ -567,6 +570,53 @@ export class Registry extends DurableObject {
     await this.#indexToken(owner, session.hash);
     await this.#ensureAlarm();
     return { ok: true, forget: cards.flatMap((card) => [`card:${card.id}`, ...(card.write?.kind === 'summary' ? [`draft:${card.id}`] : [])]) };
+  }
+
+  // A member signed in with a passkey (`owner`) takes a guest account's cards,
+  // holding its claim code as saving it would. Its cards move to the member
+  // (fused ones cannot, so a guest with any is refused, to be saved instead),
+  // and, as on saving, whoever held the guest sign-in keeps nothing: its
+  // sign-ins end, its cards leave matching, its drafts from before fail, its
+  // fusion invites and proofs from before stop counting (`claimed_at`), and
+  // the worker has the enclave delete their summaries (returned as `forget`).
+  async mergeGuest({ claim, owner }, now) {
+    const user = await this.claimable(claim, now);
+    const from = user && `user:${user.id}`;
+    if (!user || from === owner) return { ok: false, code: 'bad_claim', message: 'This guest account has already been saved or moved, or the link has expired.' };
+    const pool = (await this.ctx.storage.get('pool')) ?? [];
+    const ids = [...new Set([...((await this.ctx.storage.get(`cards-of:${from}`)) ?? []), ...pool])];
+    const found = new Map();
+    // The storage API reads at most 128 keys per call (and returns them sorted by key, so the order comes from `ids`).
+    for (let i = 0; i < ids.length; i += 128) for (const [key, card] of await this.ctx.storage.get(ids.slice(i, i + 128).map((id) => `card:${id}`))) found.set(key, card);
+    // (Ones a merge cut short already moved count too, so a retry finishes the job.)
+    const cards = ids.map((id) => found.get(`card:${id}`)).filter((card) => card && ([card.owner, card.co_owner].includes(from) || (card.owner === owner && card.merged_from === from)));
+    if (cards.some((card) => card.co_owner || card.kind === 'fusion') || ((await this.ctx.storage.get(`fusions-of:${from}`)) ?? []).length) {
+      return { ok: false, code: 'has_fusions', message: 'This guest account has fused cards, which cannot move to another account. Save it with a passkey instead.' };
+    }
+    await this.#revokeTokens(from);
+    const movedIds = new Set(cards.map((card) => card.id));
+    const mine = (await this.ctx.storage.get(`cards-of:${owner}`)) ?? [];
+    // Listed first, then moved: a merge cut short in between leaves nothing unlisted.
+    await this.ctx.storage.put(`cards-of:${owner}`, [...movedIds, ...mine.filter((id) => !movedIds.has(id))].slice(0, MAX_LISTED_CARDS));
+    const moved = cards.map(({ drafted_at: _drafted, ...card }) => ({
+      ...card,
+      owner,
+      merged_from: from,
+      ...(card.matching?.open ? { matching: { open: false } } : {}),
+      ...(card.status === 'waiting_summary' ? { status: 'failed', error: 'This draft was made before the guest account moved. Make a new one.' } : {}),
+      // A sponsorship under way credits (or refunds) the account the card is in now.
+      ...(card.sponsor?.credited_to === from ? { sponsor: { ...card.sponsor, credited_to: owner } } : {}),
+    }));
+    for (let i = 0; i < moved.length; i += 100) await this.ctx.storage.put(Object.fromEntries(moved.slice(i, i + 100).map((card) => [`card:${card.id}`, card])));
+    const credits = await this.credits(from);
+    const { claim: _used, ...rest } = user;
+    await this.ctx.storage.put({
+      ...(pool.some((id) => movedIds.has(id)) ? { pool: pool.filter((id) => !movedIds.has(id)) } : {}),
+      ...(credits ? { [`credits:${owner}`]: (await this.credits(owner)) + credits } : {}),
+      [`user:${user.id}`]: { ...rest, guest: false, claimed_at: now, merged_into: owner },
+    });
+    await this.ctx.storage.delete([`claim:${claim}`, `cards-of:${from}`, ...(credits ? [`credits:${from}`] : [])]);
+    return { ok: true, moved: moved.length, forget: moved.flatMap((card) => [`card:${card.id}`, ...(card.write?.kind === 'summary' ? [`draft:${card.id}`] : [])]) };
   }
 
   async saveCeremony(id, record) {

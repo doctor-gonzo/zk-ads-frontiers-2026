@@ -132,7 +132,12 @@ async function accountDialog(trigger) {
     list.replaceChildren(
       ...(me.cards.length
         ? me.cards.map((card) =>
-            h('li', {}, h('a', { href: card.status === 'ready' ? safe(card.page_url) : `/card?id=${card.id}` }, card.product_name), h('span', { class: `badge ${card.status}` }, card.kind === 'fusion' ? 'shared' : card.status === 'ready' ? '' : card.status === 'rendering' ? 'making' : card.status.replace('_', ' '))),
+            h(
+              'li',
+              {},
+              h('a', { class: 'with-thumb', href: `/card?id=${card.id}` }, safe(card.poster_url) ? h('img', { class: 'thumb', src: safe(card.poster_url), alt: '', width: '42', height: '56', loading: 'lazy' }) : h('span', { class: 'thumb', 'aria-hidden': 'true' }), h('span', {}, card.product_name)),
+              h('span', { class: `badge ${card.status}` }, card.kind === 'fusion' ? 'shared' : card.status === 'ready' ? '' : card.status === 'rendering' ? 'making' : card.status.replace('_', ' ')),
+            ),
           )
         : [h('li', { class: 'muted' }, 'No cards yet. Copy the prompt into your assistant to make one.')]),
     );
@@ -170,6 +175,13 @@ function fusionPanel(fusions, token) {
           no.addEventListener('click', busy(no, message, async () => (await api(`/v1/fusions/${fusion.id}/decline`, { method: 'POST', token }), item.remove())));
           item.append(h('span', { class: 'row' }, yes, no), message);
         } else if (fusion.upload_needed) item.append(h('a', { href: `/fuse?fusion=${fusion.id}` }, 'Add your summary'));
+        else if (fusion.direction === 'incoming' && fusion.status === 'waiting_summary') {
+          // Joined with a card of theirs, but not started yet (the renderer was busy, say).
+          const message = notice();
+          const start = h('button', { class: 'secondary' }, 'Make the shared card');
+          start.addEventListener('click', busy(start, message, async () => location.assign(`/card?id=${(await api(`/v1/fusions/${fusion.id}/start`, { method: 'POST', token })).data.id}`)));
+          item.append(start, message);
+        }
         else item.append(h('span', { class: 'badge' }, fusion.status.replace('_', ' ')));
         return item;
       }),
@@ -267,17 +279,6 @@ function copyActions({ label, text, missing, title, beside = null, source = fals
 function exampleSection() {
   const c = SLOP_CANNON;
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const status = notice();
-  // Loaded once the card comes near the screen; the still shows until then.
-  const video = h('video', { poster: EXAMPLE.still, muted: true, loop: true, playsinline: true, preload: 'none', 'aria-label': 'The Slop Cannon, turning in a 360° orbit' });
-  video.muted = true;
-  video.addEventListener('error', () => say(status, 'The 360° orbit could not play here, so the still stays.'));
-  let near = false;
-  const play = () => {
-    near = true;
-    if (!video.getAttribute('src')) video.src = EXAMPLE.orbit;
-    video.play().catch(() => {});
-  };
   const toPrompt = (label, primary = false) => {
     const button = h('button', { class: `chip${primary ? ' primary' : ''}`, type: 'button' }, label);
     button.addEventListener('click', () => {
@@ -287,51 +288,105 @@ function exampleSection() {
     });
     return button;
   };
-  const page = (label, ...blocks) => h('div', { class: 'face sheet' }, h('p', { class: 'label' }, label), ...blocks);
+  return storyCard({
+    c,
+    src: EXAMPLE.orbit,
+    still: EXAMPLE.still,
+    className: 'example',
+    id: 'example',
+    eyebrow: 'Example / Slop Cannon',
+    label: 'The Slop Cannon, a fictional example. Press the right arrow for the next page.',
+    // Its orbit has no name on it, so the front sets the era and name over it.
+    overlay: true,
+    product: { reading: 'Turns a rough idea into a volley of prototypes. Tuned to your tools, guided by your taste.', facts: ['1/1 custom build', 'Draft → test → refine'] },
+    makeItem: () => toPrompt('Make this one'),
+    together: [toPrompt('Invite a friend', true), toPrompt('Find a match')],
+    note: 'On your own card these work; here they lead to the prompt.',
+  });
+}
+
+// A ready card as a story card on its page here: its own orbit (which
+// carries its name) and its pages, with its buttons working for its owner.
+function cardStory(card, token) {
+  const link = (label, href, primary = false) => h('a', { class: `chip${primary ? ' primary' : ''}`, href }, label);
+  return storyCard({
+    c: card.story,
+    src: safe(card.loop_url),
+    still: safe(card.poster_url),
+    className: 'card-story',
+    label: `${card.product_name}. Press the right arrow for the next page.`,
+    product: { reading: firstSentence(card.story.pitch), facts: ['1/1 custom build', card.story.era].filter(Boolean) },
+    // As on the card's public page: the catalogue page makes an item for the card's owner (signing in first).
+    makeItem: (item, i) => link('Make this one', `/catalogue?card=${card.id}&item=${i}`),
+    together: token ? [link('Invite a friend', `/invite?card=${card.id}`, true), link('Find partners', `/match?card=${card.id}`)] : [link('Make your own', '/', true)],
+  });
+}
+
+// A pitch's first sentence, kept short enough for a story page.
+function firstSentence(text) {
+  const first = (text ?? '').match(/^.*?[.!?。！？](?=\s|$)/u)?.[0] ?? text ?? '';
+  return first.length > 170 ? `${first.slice(0, 167).trimEnd()}…` : first;
+}
+
+// A story card to click through: the front (a video over its still, turning
+// by itself once it comes near the screen, muted, and still with reduced
+// motion until the sound is asked for), then the product, You, Why,
+// Catalogue and Fuse pages from the card's text `c`. `makeItem` and
+// `together` give the catalogue's and the last page's buttons.
+function storyCard({ c, src, still: poster, className, id = null, eyebrow = null, label, overlay = false, product, makeItem, together, note = null }) {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const status = notice();
+  // Loaded once the card comes near the screen; the still shows until then.
+  const video = h('video', { poster, muted: true, loop: true, playsinline: true, preload: 'none', 'aria-label': `${c.product_name}, turning in a 360° orbit` });
+  video.muted = true;
+  video.addEventListener('error', () => say(status, 'The 360° orbit could not play here, so the still stays.'));
+  let near = false;
+  const play = () => {
+    near = true;
+    if (src && !video.getAttribute('src')) video.src = src;
+    video.play().catch(() => {});
+  };
+  const page = (title, ...blocks) => h('div', { class: 'face sheet' }, h('p', { class: 'label' }, title), ...blocks);
   const faces = [
-    // The front, as on a real card: the era and the name over the orbit.
     h(
       'div',
       { class: 'face front' },
       video,
-      h('div', { class: 'overlay' }, h('p', { class: 'era' }, c.era.replace(/,\s+/g, ' · ')), h('h2', { id: 'example-title', tabindex: '-1' }, c.product_name)),
-      h('p', { class: 'mark', 'aria-hidden': 'true' }, 'ZK', h('span', {}, 'ADS')),
+      overlay && h('div', { class: 'overlay' }, h('p', { class: 'era' }, (c.era ?? '').replace(/,\s+/g, ' · ')), h('h2', { id: id && `${id}-title`, tabindex: '-1' }, c.product_name)),
+      overlay && h('p', { class: 'mark', 'aria-hidden': 'true' }, 'ZK', h('span', {}, 'ADS')),
     ),
-    page(
-      'The product',
-      h('div', {}, h('p', { class: 'title' }, c.tagline), h('p', { class: 'reading' }, 'Turns a rough idea into a volley of prototypes. Tuned to your tools, guided by your taste.')),
-      h('div', { class: 'facts' }, h('span', {}, '1/1 custom build'), h('span', {}, 'Draft → test → refine')),
-    ),
-    page(
+    page('The product', h('div', {}, h('p', { class: 'title' }, c.tagline), product.reading && h('p', { class: 'reading' }, product.reading)), h('div', { class: 'facts' }, product.facts.map((fact) => h('span', {}, fact)))),
+    c.archetype &&
+      page(
       'You, decoded',
       h('div', {}, h('p', { class: 'title' }, c.archetype), h('p', { class: 'reading' }, c.reading)),
-      h('div', { class: 'tile stat' }, h('b', {}, c.stat_value), h('span', {}, c.stat_label)),
-      h('div', { class: 'tile' }, h('p', { class: 'label' }, 'Deepest rabbit hole'), h('p', { class: 'big' }, c.rabbit_hole)),
-      h('div', {}, h('p', { class: 'label' }, `In ${c.era}, you’d have been`), h('p', { class: 'era' }, c.era_match)),
+      c.stat_value && h('div', { class: 'tile stat' }, h('b', {}, c.stat_value), h('span', {}, c.stat_label)),
+      c.rabbit_hole && h('div', { class: 'tile' }, h('p', { class: 'label' }, 'Deepest rabbit hole'), h('p', { class: 'big' }, c.rabbit_hole)),
+      c.era_match && h('div', {}, h('p', { class: 'label' }, `In ${c.era}, you’d have been`), h('p', { class: 'era' }, c.era_match)),
     ),
     page(
       'Why it’s yours',
-      h('ol', { class: 'reasons' }, c.reasons.map((reason, i) => h('li', {}, h('span', { class: 'n' }, String(i + 1)), h('div', {}, h('p', { class: 'trait' }, reason.you), h('p', { class: 'so' }, `→ so ${reason.so}`))))),
-      h('div', {}, h('p', { class: 'label' }, 'Drawn after'), h('p', { class: 'artist' }, c.artist), h('p', { class: 'because' }, c.artist_reason)),
+      h('ol', { class: 'reasons' }, (c.reasons ?? []).map((reason, i) => h('li', {}, h('span', { class: 'n' }, String(i + 1)), h('div', {}, h('p', { class: 'trait' }, reason.you), reason.so && h('p', { class: 'so' }, `→ so ${reason.so}`))))),
+      c.artist && h('div', {}, h('p', { class: 'label' }, 'Drawn after'), h('p', { class: 'artist' }, c.artist), h('p', { class: 'because' }, c.artist_reason)),
     ),
-    page('Also made for you', c.catalogue.map((item) => h('div', { class: 'item' }, h('p', { class: 'label' }, item.era), h('p', { class: 'item-name' }, item.name), h('p', { class: 'teaser' }, item.teaser), toPrompt('Make this one')))),
+    c.catalogue?.length && page('Also made for you', c.catalogue.map((item, i) => h('div', { class: 'item' }, h('p', { class: 'label' }, item.era), h('p', { class: 'item-name' }, item.name), h('p', { class: 'teaser' }, item.teaser), makeItem(item, i, status)))),
     page(
       'Make one together',
       h('div', {}, h('p', { class: 'title' }, 'Two ways of thinking. One custom invention.'), h('p', { class: 'reading' }, 'Invite a friend. Make a shared 1/1.')),
-      h('div', { class: 'choices' }, toPrompt('Invite a friend', true), toPrompt('Find a match')),
-      h('p', { class: 'small' }, 'On your own card these work; here they lead to the prompt.'),
+      h('div', { class: 'choices' }, together),
+      note && h('p', { class: 'small' }, note),
     ),
-  ];
+  ].filter(Boolean);
   const stops = faces.map(() => h('i'));
   const counter = h('span', {});
-  const arrow = (direction, label) => {
+  const arrow = (direction, text) => {
     const holder = document.createElement('template');
     holder.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${direction === 'prev' ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'}"/></svg>`;
-    return h('button', { class: `story-nav ${direction}`, type: 'button', 'aria-label': label }, holder.content.firstElementChild);
+    return h('button', { class: `story-nav ${direction}`, type: 'button', 'aria-label': text }, holder.content.firstElementChild);
   };
   const prev = arrow('prev', 'Previous page');
   const next = arrow('next', 'Next page');
-  const card = h('div', { class: 'story', tabindex: '0', role: 'group', 'aria-roledescription': 'story card', 'aria-label': 'The Slop Cannon, a fictional example. Press the right arrow for the next page.' }, faces, prev, next);
+  const card = h('div', { class: 'story', tabindex: '0', role: 'group', 'aria-roledescription': 'story card', 'aria-label': label }, faces, prev, next);
   const sound = h('button', { class: 'sound', type: 'button', 'aria-pressed': 'false', 'aria-label': 'Turn sound on' }, icon('soundOff'));
   let at = 0;
   const show = (to) => {
@@ -384,8 +439,8 @@ function exampleSection() {
   }
   const section = h(
     'section',
-    { class: 'example', id: 'example', 'aria-labelledby': 'example-title' },
-    h('div', { class: 'example-head' }, h('p', { class: 'eyebrow' }, 'Example / Slop Cannon'), sound),
+    { class: className, id, ...(overlay && id ? { 'aria-labelledby': `${id}-title` } : { 'aria-label': c.product_name }) },
+    h('div', { class: 'example-head' }, eyebrow ? h('p', { class: 'eyebrow' }, eyebrow) : h('span', {}), sound),
     h('div', { class: 'story-count', 'aria-hidden': 'true' }, counter, h('span', { class: 'bars' }, stops)),
     card,
     status,
@@ -445,7 +500,10 @@ async function claim() {
   const fromLink = Boolean(linked) || params.has('link');
   const code = fromLink ? linked || read(LINK, sessionStorage) : read(CLAIM);
   if (!code) return show(h('h1', {}, 'Save your cards'), notice('There is no guest account to save here. Open the link your assistant gave you with your card.'), h('a', { href: '/' }, 'Back to ZKAds'));
-  const button = h('button', { class: 'primary' }, 'Create my passkey');
+  const signedIn = Boolean(await live(SESSION));
+  const button = h('button', { class: signedIn ? 'secondary' : 'primary' }, 'Create my passkey');
+  // Someone with an account already takes the cards into it instead (logging in first, if need be).
+  const add = h('button', { class: signedIn ? 'primary' : 'secondary' }, signedIn ? 'Add them to my account' : 'Log in to add them to my account');
   const message = notice();
   button.addEventListener(
     'click',
@@ -454,12 +512,28 @@ async function claim() {
       location.replace(nextPath());
     }),
   );
+  add.addEventListener(
+    'click',
+    busy(add, message, async () => {
+      const fresh = !read(SESSION);
+      if (fresh) await logIn();
+      try {
+        await moveGuest(code);
+      } catch (error) {
+        if (!fresh) throw error;
+        renderNav();
+        throw new Error(`You are logged in. ${friendly(error)}`);
+      }
+      location.replace('/');
+    }),
+  );
   show(
     h('h1', {}, 'Save your cards'),
     h('p', { class: 'lead' }, 'Create a passkey for your ZKAds account: your device’s fingerprint, face or PIN. There is no password and no email. Your cards stay yours, and you can fuse them with other people’s.'),
-    read(SESSION) && notice('You are signed in to another ZKAds account in this browser. Saving this one switches this browser to it.'),
+    h('p', {}, signedIn ? 'Or add these cards to the account you are signed in to here.' : 'Already have a ZKAds account? Log in to add these cards to it.'),
+    signedIn && notice('You are signed in to another ZKAds account in this browser. Saving this one switches this browser to it.'),
     fromLink && read(CLAIM) && read(CLAIM) !== code && notice('This link saves a different guest account from the one in this browser, whose cards stay here unsaved.'),
-    h('div', { class: 'row' }, button),
+    h('div', { class: 'row' }, signedIn ? [add, button] : [button, add]),
     message,
     h('p', { class: 'muted small' }, 'If it says the account was already saved and that was not you, someone else opened this link first: start again with the event code.'),
   );
@@ -486,15 +560,41 @@ async function claimAccount(code) {
   if (code === read(CLAIM)) [GUEST, CLAIM].forEach((key) => forget(key));
 }
 
+// Logs in with a passkey this device already has.
+async function logIn() {
+  const { data } = await api('/v1/auth/login/options', { method: 'POST', body: {} });
+  const response = await window.SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: data.options });
+  const { data: done } = await api('/v1/auth/login/verify', { method: 'POST', body: { ceremony: data.ceremony, response } });
+  write(SESSION, done.session);
+}
+
+// Moves the guest account behind claim code `code` into the account signed in
+// here: its cards become that account's, and the guest account ends. A link
+// that is used up or unknown is forgotten, as when saving.
+async function moveGuest(code) {
+  await api('/v1/auth/claim/merge', { method: 'POST', token: read(SESSION), body: { claim: code } }).catch((error) => {
+    if (error.code === 'bad_claim') {
+      if (code === read(LINK, sessionStorage)) forget(LINK, sessionStorage);
+      if (code === read(CLAIM)) [GUEST, CLAIM].forEach((key) => forget(key));
+      renderNav();
+    }
+    throw error;
+  });
+  if (code === read(LINK, sessionStorage)) forget(LINK, sessionStorage);
+  if (code === read(CLAIM)) [GUEST, CLAIM].forEach((key) => forget(key));
+}
+
+// (A task that leaves its dialog open says so by returning this.)
+const STAY = Symbol('stay');
+
 // For a guest account (from an event code): save it with a passkey.
 function savePanel() {
   return h(
     'section',
     { class: 'panel' },
     h('h2', {}, 'Save your cards'),
-    h('p', {}, 'You are a guest in this browser. Save your cards with a passkey (your device’s fingerprint, face or PIN; no password or email) to keep them and to fuse them with other people’s.'),
-    h('div', { class: 'row' }, h('a', { class: 'button primary', href: withNext('/claim') }, 'Save with a passkey')),
-    h('p', { class: 'muted small' }, 'Already a member? ', h('a', { href: withNext('/signin') }, 'Sign in'), ' (these guest cards stay out of your account).'),
+    h('p', {}, 'You are a guest in this browser. Save your cards with a passkey (your device’s fingerprint, face or PIN; no password or email) to keep them and to fuse them with other people’s, or log in to add them to the account you already have.'),
+    h('div', { class: 'row' }, h('a', { class: 'button primary', href: withNext('/claim') }, 'Save your cards')),
   );
 }
 
@@ -669,26 +769,34 @@ function confirmApprover(data) {
 async function make(agentToken) {
   // (This tab's assistant sign-in comes before a guest account left in the browser.)
   let token = agentToken ?? read(SESSION) ?? read(AGENT, sessionStorage) ?? read(GUEST);
-  // With an event code (the link skill.md gives a chat app, which sends its
-  // person here with its reply), a stale sign-in is dropped so this browser
-  // can start a fresh guest account instead. (A code the chat app garbled
-  // gives way to the event's own, as on the landing page.)
-  const code = agentToken || !params.has('code') ? null : eventCode();
-  if (code) token = (await live(SESSION)) ?? read(AGENT, sessionStorage) ?? (await live(GUEST));
-  // A chat app can put the card itself in the link, ready to make. (Another
-  // link opened in this tab changes only the fragment, so the page starts
-  // again for it.)
+  // A chat app can put the card itself in the link, and it starts at once.
+  // (Another link opened in this tab changes only the fragment, so the page
+  // starts again for it.)
   const linked = agentToken ? null : linkedCard();
   if (!agentToken) addEventListener('hashchange', () => location.reload(), { once: true });
   // (Nor does a page the browser keeps for Back offer a card made since.)
   if (linked) addEventListener('pageshow', (event) => event.persisted && location.reload());
+  // The same link again (a reload, a second tap) goes to the card it made
+  // here, unless that card is gone or failed.
+  const made = linked?.parsed ? idFrom(read(madeKey(linked.text))) : null;
+  if (made && (await api(`/v1/cards/${made}`).then(({ data }) => data.status !== 'failed', (error) => error.status !== 404))) {
+    forget(LINKED, sessionStorage);
+    return location.replace(`/card?id=${made}`);
+  }
+  if (made) forget(madeKey(linked.text));
+  // With an event code (the link skill.md gives a chat app), a stale sign-in
+  // is dropped so this browser can start a fresh guest account instead. (A
+  // code the chat app garbled, or left out of a link with a card, gives way to
+  // the event's own, as on the landing page.)
+  const code = agentToken || !(params.has('code') || linked) ? null : eventCode();
+  if (code) token = (await live(SESSION)) ?? read(AGENT, sessionStorage) ?? (await live(GUEST));
   if (!token && !code) {
     const lead = linked ? 'This link holds a card. Sign in to make it.' : ['Sign in first. Assistants using a browser can ', h('a', { href: '/agent' }, 'sign in as an assistant'), '.'];
     return show(h('h1', {}, 'Make a card'), h('p', {}, lead), signInButton());
   }
   // With only the code, the guest account starts when something is first sent
-  // from this page, never on opening the link (and not at all once the person
-  // has logged in here).
+  // from this page, a card in the link sending itself once the page is on
+  // screen (and not at all once the person has logged in here).
   let starting = null;
   const account = async () => token ?? read(SESSION) ?? (token = await (starting ??= startGuest(code).finally(() => (starting = null))));
   const reply = h('textarea', { id: 'reply', placeholder: 'Paste the whole reply here', spellcheck: 'false' });
@@ -719,16 +827,34 @@ async function make(agentToken) {
       } catch {
         // Not bare JSON: send the reply as text.
       }
-      const { data } = await api('/v1/cards', { method: 'POST', token: await account(), body: { concept, name: name.value.trim() || undefined } });
+      // A link's card made meanwhile in another tab, or being made there now,
+      // is that card, not a second one.
+      const key = linked?.parsed ? madeKey(linked.text) : null;
+      const seen = key && read(key);
+      if (idFrom(seen)) return (forget(LINKED, sessionStorage), location.replace(`/card?id=${seen}`));
+      if (/^pending:\d+$/.test(seen ?? '') && Date.now() - Number(seen.slice(8)) < 60_000) return awaitMade(key, message);
+      if (key) write(key, `pending:${Date.now()}`);
+      let data;
+      try {
+        ({ data } = await api('/v1/cards', { method: 'POST', token: await account(), body: { concept, name: name.value.trim() || undefined } }));
+      } catch (error) {
+        if (key && read(key)?.startsWith('pending:')) forget(key);
+        // A link with no code of its own, when the event's code no longer works: signing in is the way.
+        if (linked && !params.has('code') && ['bad_code', 'not_event_code'].includes(error.code)) return show(h('h1', {}, 'Make a card'), h('p', {}, 'This link holds a card. Sign in to make it.'), signInButton());
+        throw error;
+      }
       forget(LINKED, sessionStorage);
+      if (key) write(key, data.id);
       // (In place of this page, so Back cannot offer the same card again.)
       location.replace(`/card?id=${data.id}`);
     }),
   );
+  // A card in the link starts by itself, unless this browser could not keep the guest account it needs.
+  const auto = Boolean(linked?.parsed && (token || storageWorks()));
   // Sent here by a chat app, the person already has its card (in the link) or
   // its reply, so the page asks for that first.
   const steps = linked
-    ? h('p', { class: 'lead' }, ...(linked.title ? ['This link holds a card: ', h('bdi', {}, linked.title), '. Press Make my card to make it.'] : ['This link holds a card. Press Make my card to make it.']))
+    ? h('p', { class: 'lead' }, 'This link holds a card', ...(linked.title ? [': ', h('bdi', {}, linked.title)] : []), auto ? '. Making it now…' : '. Press Make my card to make it.')
     : code
       ? h('p', { class: 'lead' }, 'Your assistant sent you here because it can’t send your card to ZK Ads itself. Paste its whole reply below, then press Make my card.')
       : [h('ol', { class: 'steps' }, h('li', {}, 'Copy the prompt and paste it into your assistant (Claude, ChatGPT…).'), h('li', {}, 'Paste its whole reply below. Only the card concept is kept.')), h('div', { class: 'row' }, copyPrompt)];
@@ -740,10 +866,49 @@ async function make(agentToken) {
     field('Name on the card', name),
     h('div', { class: 'row' }, submit),
     message,
-    !token && h('p', { class: 'muted' }, 'Making it starts a guest account with your event code; “save” at the top keeps it. Have an account? Log in at the top first.'),
+    !token && h('p', { class: 'muted' }, 'Making it starts a guest account with the event’s code. “save” at the top keeps it, or adds its cards to an account you already have.'),
     code && !linked && [h('p', { class: 'muted' }, 'No reply yet? Copy the prompt into your assistant (Claude, ChatGPT…) first.'), h('div', { class: 'row' }, copyPrompt)],
     !linked && summaryPanel(account, name),
   );
+  // A card in the link starts at once, once the page is on screen (a page
+  // opened behind, or held by a link preview, starts nothing until seen).
+  if (auto) whenVisible(() => submit.click());
+}
+
+// Waits (a minute at most) for the card another tab is making from the same
+// link, and opens it here once it exists.
+function awaitMade(key, message) {
+  say(message, 'This card is being made in another tab. It opens here as soon as it exists.', true);
+  const since = Date.now();
+  const timer = setInterval(() => {
+    const id = idFrom(read(key));
+    if (id) {
+      clearInterval(timer);
+      forget(LINKED, sessionStorage);
+      location.replace(`/card?id=${id}`);
+    } else if (!read(key)?.startsWith('pending:') || Date.now() - since > 60_000) {
+      clearInterval(timer);
+      say(message, 'The other tab did not make it. Press Make my card to make it here.');
+    }
+  }, 1000);
+}
+
+// Runs `task` now if the page is on screen, or as soon as it is.
+function whenVisible(task) {
+  if (document.visibilityState === 'visible') return task();
+  const seen = () => {
+    if (document.visibilityState !== 'visible') return;
+    document.removeEventListener('visibilitychange', seen);
+    task();
+  };
+  document.addEventListener('visibilitychange', seen);
+}
+
+// Where this browser notes the card a link's text made (a short key for the text).
+function madeKey(text) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193) >>> 0;
+  return `zkads.made.${text.length}.${hash.toString(36)}`;
 }
 
 const LINKED = 'zkads.linked-card';
@@ -770,9 +935,9 @@ function linkedCard() {
   if (!text?.trim()) return null;
   try {
     const parsed = JSON.parse(text);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      const concept = parsed.concept ?? parsed;
-      return { text: JSON.stringify(concept, null, 2), title: typeof concept.product_name === 'string' ? cardName(concept.product_name) || null : null };
+    const concept = parsed?.concept ?? parsed;
+    if (concept && typeof concept === 'object' && !Array.isArray(concept)) {
+      return { text: JSON.stringify(concept, null, 2), title: typeof concept.product_name === 'string' ? cardName(concept.product_name) || null : null, parsed: true };
     }
   } catch {
     // Not JSON after all: it goes as text, and ZKAds looks for the JSON in it.
@@ -906,7 +1071,7 @@ async function cardView() {
   const id = params.get('id') ?? '';
   if (!/^[a-z2-7]{20}$/.test(id)) return notFound();
   const eyebrow = h('p', { class: 'eyebrow' }, 'Making your card');
-  const title = h('h1', {}, 'Something custom is taking shape');
+  const title = h('h1', {}, 'Crafting your object…');
   // The latest status, for the help beside each stage (which software does it, for this card).
   let card = null;
   const list = h(
@@ -936,10 +1101,12 @@ async function cardView() {
       else item.removeAttribute('aria-current');
     });
     if (card.status === 'ready') {
-      eyebrow.textContent = 'Your card';
+      // The card shows its own name, so the page's heading is for screen readers only.
+      eyebrow.hidden = true;
       title.textContent = card.product_name;
+      title.className = 'sr';
       list.hidden = true;
-      return extra.replaceChildren(...[readyCard(card), !read(SESSION) && read(GUEST) && savePanel()].filter(Boolean));
+      return extra.replaceChildren(readyCard(card, read(SESSION) ?? read(AGENT, sessionStorage) ?? read(GUEST)));
     }
     if (card.status === 'failed') {
       title.textContent = 'This card could not be made';
@@ -956,15 +1123,17 @@ async function cardView() {
   tick();
 }
 
-function readyCard(card) {
+// A ready card: its story card right here (or its poster, for a card with no
+// story to show), then its full page, its video and sharing.
+function readyCard(card, token) {
   const share = navigator.share && h('button', { class: 'secondary' }, 'Share');
   share?.addEventListener('click', () => navigator.share({ title: card.product_name, url: card.page_url }).catch(() => {}));
   return h(
     'div',
-    {},
+    { class: 'ready' },
     card.update_error && notice(`The last change to this card did not go through, so it is as it was. ${card.update_error}`),
-    safe(card.poster_url) && h('a', { href: safe(card.page_url) }, h('img', { class: 'poster', src: safe(card.poster_url), alt: card.product_name })),
-    h('div', { class: 'row' }, h('a', { class: 'button primary', href: safe(card.page_url) }, 'Open the card'), safe(card.video_url) && h('a', { class: 'button', href: safe(card.video_url), download: '' }, 'Download the video'), share),
+    card.story && safe(card.loop_url) ? cardStory(card, token) : safe(card.poster_url) && h('a', { href: safe(card.page_url) }, h('img', { class: 'poster', src: safe(card.poster_url), alt: card.product_name })),
+    h('div', { class: 'row ready-actions' }, h('a', { class: 'button primary', href: safe(card.page_url) }, 'Open the full card'), safe(card.video_url) && h('a', { class: 'button', href: safe(card.video_url), download: '' }, 'Download the video'), share),
   );
 }
 
@@ -1126,17 +1295,29 @@ async function fuse() {
     try {
       ({ data: face } = await api(`/v1/fusion-invites/${encodeURIComponent(code)}`));
     } catch (error) {
+      // An invite this browser used already goes to the shared card it made,
+      // or offers to start the one it joined but could not start.
+      const fusedHere = idFrom(read(fusedKey(code)));
+      if (fusedHere) return location.replace(`/card?id=${fusedHere}`);
+      const from = read(`${fusedKey(code)}.from`);
+      const signedIn = from && (read(SESSION) ?? read(AGENT, sessionStorage) ?? (await live(GUEST)));
+      const waiting = signedIn && (await api('/v1/fusions', { token: signedIn }).then(({ data }) => data.fusions.find((f) => f.direction === 'incoming' && f.status === 'waiting_summary' && !f.upload_needed && f.from?.id === from), () => null));
+      if (waiting) return show(h('h1', {}, 'Fuse items'), h('p', { class: 'lead' }, 'You joined this invite, but its shared card has not started yet.'), startFusionButton(waiting.id, signedIn, code));
+      forget(`${fusedKey(code)}.from`);
       if (!fusionId) return show(h('h1', {}, 'Fuse items'), notice(friendly(error)), h('a', { href: '/' }, 'Back to ZKAds'));
     }
   }
   const header = [
     h('h1', {}, face?.card.name ? `Fuse with ${face.card.name}’s card` : face ? 'Fuse with this card' : 'Fuse items'),
     face && safe(face.card.poster_url) && h('img', { class: 'poster', src: safe(face.card.poster_url), alt: face.card.product_name ?? '' }),
-    face && h('p', { class: 'lead' }, `${face.card.product_name}: fuse it with your own interests into one shared item, for both of you.`),
+    face && h('p', { class: 'lead' }, `${face.card.product_name}: fused with a card of yours, it becomes one shared item for both of you.`),
   ];
-  if (!token && read(GUEST)) return show(...header, savePanel());
+  if (face && !fusionId && (await autoFuse(code, face, header))) return;
+  // No card to fuse yet: the person's assistant makes one and fuses it (from this line), or they fuse from a summary.
+  const assistant = face && h('section', { class: 'panel' }, h('h2', {}, 'No card yet?'), h('p', {}, 'Copy this line into your AI assistant: it makes your card and fuses it with this one. Nothing to paste back.'), ...copyActions({ label: 'Copy the line', text: `Read ${API}/skill.md and fuse my ZKAds card with yours: ${location.origin}/fuse?code=${encodeURIComponent(inviteCodeOf(code) ?? code)}`, title: 'Fuse line' }).nodes);
+  if (!token && read(GUEST)) return show(...header, assistant, savePanel());
   if (!token) {
-    return show(...header, joinPanel(code), h('section', { class: 'panel' }, h('h2', {}, 'Already a member?'), signInButton()));
+    return show(...header, assistant, joinPanel(code), h('section', { class: 'panel' }, h('h2', {}, 'Already a member?'), signInButton()));
   }
   const summary = h('textarea', { id: 'summary', placeholder: 'Paste the summary here', spellcheck: 'false' });
   const name = h('input', { id: 'fuse-name', maxlength: '40', placeholder: 'Optional' });
@@ -1171,6 +1352,8 @@ async function fuse() {
   );
   show(
     ...header,
+    assistant,
+    face && h('h2', {}, 'Or fuse from a private summary'),
     h('ol', { class: 'steps' }, h('li', {}, 'Copy the summary prompt and paste it into your assistant (Claude, ChatGPT…).'), h('li', {}, 'Paste its summary below. It goes straight into the enclave, is read only there, and is deleted once your shared idea is written (or within 24 hours if it never is).')),
     h('div', { class: 'row' }, copyPrompt),
     field('Your assistant’s summary', summary),
@@ -1178,6 +1361,92 @@ async function fuse() {
     h('div', { class: 'row' }, submit),
     message,
   );
+}
+
+// Where this browser notes the shared card a fusion invite made.
+function fusedKey(code) {
+  return `zkads.fused.${inviteCodeOf(code) ?? code}`;
+}
+
+// Fusing needs nothing pasted when there is a card of the friend's to fuse:
+// one their assistant put in this link (made here first), or their newest
+// card in this browser. It starts once the page is on screen; false when
+// there is no card to fuse (the page then offers the other ways).
+async function autoFuse(code, face, header) {
+  const linked = linkedCard();
+  // (A card in the link that cannot be read fuses nothing else in its place.)
+  if (linked && !linked.parsed) return false;
+  let token = (await live(SESSION)) ?? read(AGENT, sessionStorage) ?? (await live(GUEST));
+  let cardId = linked ? idFrom(read(madeKey(linked.text))) : null;
+  if (!linked) {
+    if (!token) return false;
+    const mine = await api('/v1/me', { token }).then(({ data }) => data.cards, () => []);
+    // (The invite's own card here means it is the inviter looking at their invite.)
+    if (mine.some((card) => card.id === face.card.id)) return false;
+    const own = mine.filter((card) => card.kind !== 'fusion');
+    const pick = own.find((card) => card.status === 'ready') ?? own.find((card) => card.concept_by === 'assistant' && card.status !== 'failed');
+    if (!pick) return false;
+    cardId = pick.id;
+    // One of the person's cards fuses on their tap, naming it: a link alone
+    // never hands someone's card to whoever sent it.
+    const fuseIt = h('button', { class: 'primary', type: 'button' }, 'Fuse them');
+    show(...header, h('p', { class: 'lead' }, 'Fuse with your card: ', h('bdi', {}, pick.product_name), '?'), h('div', { class: 'row' }, fuseIt));
+    await new Promise((resolve) => fuseIt.addEventListener('click', resolve, { once: true }));
+  }
+  // A card from the link with no sign-in here starts a guest account, with
+  // the event's own code (this page's `code` is the fusion invite's).
+  const guestCode = inviteCodeOf(window.ZKADS_EVENT_CODE ?? '');
+  if (!token && !(guestCode && storageWorks())) return false;
+  const message = notice();
+  const again = h('button', { class: 'primary', type: 'button', hidden: true }, 'Try again');
+  show(...header, h('p', { class: 'lead' }, cardId ? 'Fusing your card with this one…' : 'Making your card from the link, then fusing it with this one…'), h('div', { class: 'row' }, again), message);
+  const run = busy(again, message, async () => {
+    if (!cardId) {
+      token ??= await startGuest(guestCode);
+      const { data } = await api('/v1/cards', { method: 'POST', token, body: { concept: JSON.parse(linked.text) } });
+      cardId = data.id;
+      write(madeKey(linked.text), cardId);
+      forget(LINKED, sessionStorage);
+    }
+    let fused;
+    write(`${fusedKey(code)}.from`, face.card.id);
+    try {
+      fused = (await api(`/v1/fusion-invites/${encodeURIComponent(code)}/accept`, { method: 'POST', token, body: { card_id: cardId } })).data.card;
+    } catch (error) {
+      // Claimed here before but not started (the renderer was busy, say): started now.
+      if (!['used', 'not_found'].includes(error.code)) throw error;
+      const { data } = await api('/v1/fusions', { token });
+      const waiting = data.fusions.find((f) => f.direction === 'incoming' && f.status === 'waiting_summary' && !f.upload_needed && f.from?.id === face.card.id);
+      if (!waiting) throw error;
+      fused = (await api(`/v1/fusions/${waiting.id}/start`, { method: 'POST', token })).data;
+    }
+    write(fusedKey(code), fused.id);
+    location.replace(`/card?id=${fused.id}`);
+  });
+  const go = async () => {
+    await run();
+    again.hidden = message.hidden;
+  };
+  again.addEventListener('click', go);
+  // (A card from the link starts once the page is on screen; the person's own card, on their tap above.)
+  if (linked) whenVisible(go);
+  else go();
+  return true;
+}
+
+// Starts a fusion joined with a card whose shared card did not start (the renderer was busy, say).
+function startFusionButton(id, token, code) {
+  const message = notice();
+  const start = h('button', { class: 'primary', type: 'button' }, 'Make the shared card');
+  start.addEventListener(
+    'click',
+    busy(start, message, async () => {
+      const { data } = await api(`/v1/fusions/${id}/start`, { method: 'POST', token });
+      write(fusedKey(code), data.id);
+      location.replace(`/card?id=${data.id}`);
+    }),
+  );
+  return [h('div', { class: 'row' }, start), message];
 }
 
 // find_fusion_partner from the web: open a card to matching (sealing a
@@ -1321,9 +1590,9 @@ function renderNav() {
 }
 
 function accountLabel() {
-  if (linkHere()) return 'save';
+  if (linkHere()) return 'save your cards';
   if (guest === 'checking') return null;
-  return guest === 'ok' && read(CLAIM) ? 'save' : 'login';
+  return guest === 'ok' && read(CLAIM) ? 'save your cards' : 'login';
 }
 
 // Checks this browser's guest account (again), then redraws the header.
@@ -1368,8 +1637,7 @@ function openAuth(trigger) {
     login.disabled = create.disabled = true;
     message.hidden = true;
     try {
-      await task();
-      location.assign(nextPath());
+      if ((await task()) !== STAY) location.assign(nextPath());
     } catch (error) {
       say(message, friendly(error));
       login.disabled = create.disabled = false;
@@ -1378,10 +1646,24 @@ function openAuth(trigger) {
   login.addEventListener(
     'click',
     run(async () => {
-      const { data } = await api('/v1/auth/login/options', { method: 'POST', body: {} });
-      const response = await window.SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: data.options });
-      const { data: done } = await api('/v1/auth/login/verify', { method: 'POST', body: { ceremony: data.ceremony, response } });
-      write(SESSION, done.session);
+      await logIn();
+      renderNav();
+      if (!claimCode) return;
+      // Logging in with a guest account at hand takes its cards along.
+      try {
+        await moveGuest(claimCode);
+      } catch (error) {
+        // Logged in all the same: the guest's cards stay where they were, and
+        // Create can still save that account as one of its own.
+        say(message, `You are logged in. ${friendly(error)}`);
+        login.hidden = true;
+        create.disabled = false;
+        const go = h('button', { class: 'btn primary big', type: 'button' }, 'Continue');
+        go.addEventListener('click', () => location.assign(nextPath()));
+        message.after(go);
+        go.focus();
+        return STAY;
+      }
     }),
   );
   create.addEventListener(
@@ -1408,7 +1690,7 @@ function openAuth(trigger) {
     initial: login,
     content: [
       h('div', { class: 'choices' }, login, create),
-      claimCode && h('p', { class: 'note' }, fromLink ? 'Create saves the guest account from your assistant’s link with a passkey. Log in keeps it apart: its cards are not moved into your account.' : 'Create saves this browser’s guest cards with a passkey. Log in keeps them apart: they are not moved into your account.'),
+      claimCode && h('p', { class: 'note' }, fromLink ? 'Create saves the guest account from your assistant’s link as a new account with a passkey. Log in adds its cards to the account you already have.' : 'Create saves this browser’s guest cards as a new account with a passkey. Log in adds them to the account you already have.'),
       message,
     ],
   });
@@ -1583,7 +1865,7 @@ function about() {
       h(
         'aside',
         { class: 'side' },
-        h('figure', { class: 'badge-fig' }, h('img', { src: '/media/charlie-frontiers-badge.jpg', width: '572', height: '854', alt: "Charlie Thompson's Paradigm Frontiers badge, with the handle @doctor-gonzo and colorful abstract artwork." })),
+        tiltBadge(h('figure', { class: 'badge-fig' }, h('img', { src: '/media/charlie-frontiers-badge.jpg', width: '572', height: '854', alt: "Charlie Thompson's Paradigm Frontiers badge, with the handle @doctor-gonzo and colorful abstract artwork." }), h('span', { class: 'glare', 'aria-hidden': 'true' }))),
         h('p', { class: 'links' }, out('https://charliethompson.lol/', 'charliethompson.lol')),
         h('p', { class: 'links' }, out('https://www.linkedin.com/in/charlie-thompson-2a8293aa/', 'LinkedIn'), out('https://x.com/charlie______t', 'Twitter')),
         h('p', { class: 'links' }, h('a', { href: 'mailto:charlie_thompson@protonmail.com' }, 'charlie_thompson@protonmail.com')),
@@ -1598,6 +1880,30 @@ function about() {
     ),
   );
   view.classList.add('wide');
+}
+
+// The badge leans toward the pointer like a card held to the light, with a
+// highlight that follows it (left still with reduced motion).
+function tiltBadge(figure) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return figure;
+  figure.addEventListener('pointermove', (event) => {
+    const box = figure.getBoundingClientRect();
+    const x = Math.min(Math.max((event.clientX - box.left) / box.width, 0), 1) - 0.5;
+    const y = Math.min(Math.max((event.clientY - box.top) / box.height, 0), 1) - 0.5;
+    const set = (name, value) => figure.style.setProperty(name, value);
+    set('--rx', `${(-y * 16).toFixed(2)}deg`);
+    set('--ry', `${(x * 18).toFixed(2)}deg`);
+    set('--gx', `${((x + 0.5) * 100).toFixed(1)}%`);
+    set('--gy', `${((y + 0.5) * 100).toFixed(1)}%`);
+    set('--sx', `${(-x * 28).toFixed(1)}px`);
+    set('--sy', `${(22 - y * 18).toFixed(1)}px`);
+    figure.classList.add('tilting');
+  });
+  figure.addEventListener('pointerleave', () => {
+    figure.classList.remove('tilting');
+    for (const name of ['--rx', '--ry', '--sx', '--sy']) figure.style.removeProperty(name);
+  });
+  return figure;
 }
 
 // About keeps the landing page's event code. Only a landing page's code

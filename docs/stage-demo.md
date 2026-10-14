@@ -50,12 +50,14 @@ earlier card.
 
 1. On screen: your card → "Fuse with someone" → the QR code. It works
    once, for whoever scans it first, so put it up when the judge is ready.
-2. The judge scans it on their phone, joins with the invite (one tap for a
-   passkey), copies the summary prompt into their own assistant, and pastes
-   the summary back. It goes straight into the enclave.
-3. Say: "Neither of us sees the other's chats. Inside the enclave, a model
-   reads each summary on its own and notes a few harmless traits; the shared
-   item is written from those, and the judge's summary is deleted."
+2. The judge scans it on their phone. If they already have a card in that
+   browser, one tap fuses it; otherwise they copy the page's fuse line into
+   their assistant, which makes their card and fuses it (nothing to paste
+   back). A chat app does it with one link that carries their card.
+3. Say: "Neither of us sees the other's chats. The shared item is written
+   inside the enclave, by a confidential model, from our two cards." (A
+   private summary is the fallback for someone with no card: read on its
+   own in the enclave, then deleted.)
 4. The shared card renders for both of you (2–6 minutes). Reveal it at the end.
 
 *Fallback:* a fusion made earlier with a teammate; or the judge pastes their
@@ -95,18 +97,21 @@ assistant:
 
 An assistant that can make web requests (Claude Code, Codex, Hermes) signs
 itself in as a guest with the code and makes the card: no account and no
-approval. It then gives its person a link that saves the account with a
-passkey, which fusing needs. The caret on Copy prompt unfolds "read prompt",
-which shows the whole line first. For someone with only a chat app, skill.md
-has the assistant put the card itself in a `/make?code=…#concept=…` link:
-tapping it opens their card, and Make my card makes it, starting the guest
-account in their browser (or using their account if they are logged in
-there). Pasting the assistant's whole reply at `/make?code=…` still works,
-and "save" in the header adds the passkey later. People can also create an
-account with the code straight away ("login", then "Create": a passkey, as
-with an invite). A signed-in member's line adds "I already have a ZKAds
-account", so their assistant signs in to that account (a code they approve)
-instead of starting a guest one.
+approval. It gives its person the card's page at once, to watch it being
+made, and a link that saves the account with a passkey, which fusing needs
+(someone who already has an account logs in from that link instead, and the
+cards move into it). The caret on Copy prompt unfolds "read prompt", which
+shows the whole line first. For someone with only a chat app, skill.md has
+the assistant put the card itself in a `/make?code=…#concept=…` link:
+opening it starts the card at once and shows it being made, starting the
+guest account in their browser (or using their account if they are logged in
+there), and opening it again goes back to that card. Pasting the assistant's
+whole reply at `/make?code=…` still works, and "save" in the header adds the
+passkey later, or moves the cards into an account they already have. People
+can also create an account with the code straight away ("login", then
+"Create": a passkey, as with an invite). A signed-in member's line adds "I
+already have a ZKAds account", so their assistant signs in to that account
+(a code they approve) instead of starting a guest one.
 
 The site's own address works without the link too: its line, and Create,
 use the event's code from `ZKADS_EVENT_CODE` in `app/config.js` (change or

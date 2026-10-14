@@ -850,10 +850,10 @@ test('a person joins with an invite and a passkey, approves an agent, and signs 
     await page.getByRole('dialog', { name: 'Save your cards' }).getByRole('button', { name: 'Log in' }).click();
     await page.getByRole('heading', { name: 'Your cards' }).waitFor();
     await page.getByRole('link', { name: 'The Approved Terrarium' }).waitFor();
-    // Signed in, the header's "account" lists the cards this member is part of; each opens its card.
+    // Signed in, the header's "account" lists the cards this member is part of; each opens its card here.
     await page.getByRole('button', { name: 'account', exact: true }).click();
     await page.getByRole('dialog', { name: 'Your cards' }).getByRole('link', { name: 'The Approved Terrarium' }).click();
-    await page.waitForURL((url) => url.pathname === `/c/${made.id}/`);
+    await page.waitForURL((url) => url.pathname === '/card' && url.searchParams.get('id') === made.id);
     await page.goto(`${site}/`);
 
     // A member's fusion invite lets one newcomer join, until a member claims it.
@@ -940,37 +940,101 @@ test('an event code: an assistant starts a guest account in one step, and its pe
     await page.getByRole('button', { name: 'read prompt' }).click();
     assert.equal(await page.getByRole('dialog', { name: 'Prompt' }).locator('.prompt-text').textContent(), `Read ${site}/skill.md and make me a ZKAds card. I already have a ZKAds account. Event code: ${event.code}`);
     // A chat app's link can carry the card itself, its JSON percent-encoded whole or only where a link needs it
-    // (spaces, "%" and brackets). Opening it makes nothing; for a member logged in here, Make my card makes it in
-    // their own account (no guest account, so no use of the code).
+    // (spaces, "%", "\", "&" and brackets). Opening it starts the card at once, here in the member's own account
+    // (no guest account, so no use of the code), and opening it again goes back to that card.
     const linkedConcept = { ...sampleConcept(), product_name: 'The Linked Terrarium (Mk II)', tagline: 'Says "grow" & means it, 100% of the time.' };
     const cardsBefore = (await (await me(session)).json()).cards.length;
+    const sent = [];
+    const record = (request) => request.method() === 'POST' && request.url().endsWith('/v1/cards') && sent.push(request.postDataJSON().concept);
+    page.on('request', record);
     await page.goto(`${site}/make?code=${event.code}#concept=${encodeURIComponent(JSON.stringify({ ...linkedConcept, product_name: 'The Encoded Terrarium' }))}`);
-    await page.getByText('This link holds a card: The Encoded Terrarium. Press Make my card to make it.').waitFor();
-    await page.goto(`${site}/about`);
+    await page.waitForURL((url) => url.pathname === '/card');
+    const encodedId = new URL(page.url()).searchParams.get('id');
     const lightly = JSON.stringify(linkedConcept).replace(/%/g, '%25').replace(/ /g, '%20').replace(/\\/g, '%5C').replace(/&/g, '%26').replace(/\(/g, '%28').replace(/\)/g, '%29');
     await page.goto(`${site}/make?code=${event.code}#concept=${lightly}`);
-    const ready = 'This link holds a card: The Linked Terrarium (Mk II). Press Make my card to make it.';
-    await page.getByText(ready).waitFor();
-    assert.equal(new URL(page.url()).searchParams.get('linked'), '1', 'the address is marked, so a login’s return finds the card');
-    assert.equal(new URL(page.url()).hash, '', 'and the card leaves the address once kept, so Back cannot offer it again');
-    assert.equal(await page.locator('#reply').isVisible(), false, 'the card’s text waits behind “What your assistant wrote”');
-    assert.equal(JSON.parse(await page.locator('#reply').inputValue()).tagline, linkedConcept.tagline);
-    assert.equal(await page.getByText('Making it starts a guest account').count(), 0);
-    // Coming back without the fragment (as after logging in) finds the card; a plain visit does not.
-    await page.goto(`${site}/make?code=${event.code}&linked=1`);
-    await page.getByText(ready).waitFor();
-    await page.goto(`${site}/make?code=${event.code}`);
-    await page.getByText('Your assistant sent you here because it can’t send your card to ZK Ads itself.').waitFor();
-    assert.equal((await (await me(session)).json()).cards.length, cardsBefore, 'opening links made nothing');
-    await page.goto(`${site}/make?code=${event.code}&linked=1`);
-    await page.getByText(ready).waitFor();
-    await page.getByRole('button', { name: 'Make my card', exact: true }).click();
-    await page.waitForURL((url) => url.pathname === '/card');
+    await page.waitForURL((url) => url.pathname === '/card' && url.searchParams.get('id') !== encodedId);
     const linkedId = new URL(page.url()).searchParams.get('id');
+    assert.deepEqual(sent.map((concept) => [concept.product_name, concept.tagline]), [['The Encoded Terrarium', linkedConcept.tagline], [linkedConcept.product_name, linkedConcept.tagline]]);
     const afterLink = (await (await me(session)).json()).cards;
-    assert.deepEqual([afterLink.length, afterLink[0].id, afterLink[0].product_name], [cardsBefore + 1, linkedId, 'The Linked Terrarium (Mk II)']);
+    assert.deepEqual([afterLink.length, afterLink[0].id, afterLink[1].id], [cardsBefore + 2, linkedId, encodedId]);
     assert.equal(await page.evaluate(() => sessionStorage.getItem('zkads.linked-card')), null, 'the link’s card is not kept once made');
+    await page.goto(`${site}/make?code=${event.code}#concept=${lightly}`);
+    await page.waitForURL((url) => url.pathname === '/card' && url.searchParams.get('id') === linkedId);
+    assert.equal(sent.length, 2, 'the same link again made nothing new');
+    page.off('request', record);
+    // A plain visit after that is the paste page, not a card from before.
+    await page.goto(`${site}/make?code=${event.code}&linked=1`);
+    await page.getByText('Your assistant sent you here because it can’t send your card to ZK Ads itself.').waitFor();
+    await untilReady(encodedId);
     await untilReady(linkedId);
+
+    // A member takes a guest account's cards into their own: from its save link while signed in, or by logging in there.
+    const moving = [];
+    for (const name of ['Third', 'Fourth']) {
+      const started = await (await post('/v1/agent/guest', { code: roomy.invites[0].code, agent_name: name })).json();
+      const card = await (await post('/v1/cards', { concept: { ...sampleConcept(), product_name: `The ${name} Terrarium` } }, started.token)).json();
+      moving.push({ ...started, card: card.id });
+    }
+    await page.goto(moving[0].claim_url);
+    await page.getByRole('button', { name: 'Add them to my account' }).click();
+    await page.waitForURL((url) => url.pathname === '/');
+    await page.getByRole('link', { name: 'The Third Terrarium' }).waitFor();
+    assert.equal((await me(moving[0].token)).status, 401, 'the guest sign-in ended');
+    assert.equal((await post('/v1/auth/claim/options', { claim: new URL(moving[0].claim_url).hash.slice(1) })).status, 404, 'and its save link is used up');
+    await page.evaluate(() => localStorage.removeItem('zkads.session'));
+    await page.goto(moving[1].claim_url);
+    await page.getByRole('button', { name: 'Log in to add them to my account' }).click();
+    await page.waitForURL((url) => url.pathname === '/');
+    await page.getByRole('link', { name: 'The Fourth Terrarium' }).waitFor();
+    session = await page.evaluate(() => localStorage.getItem('zkads.session'));
+    const owned = (await (await me(session)).json()).cards.map((card) => card.id);
+    assert.ok(moving.every((guest) => owned.includes(guest.card)), 'both guests’ cards are the member’s now');
+    // An assistant's sign-in cannot move anyone's cards: that takes the person's passkey.
+    assert.equal((await post('/v1/auth/claim/merge', { claim: new URL(second.claim_url).hash.slice(1) }, second.token)).status, 403);
+    for (const guest of moving) await untilReady(guest.card);
+
+    // A fusion invite fuses straight away with one of the friend's cards: no summary, and a guest's token will do.
+    const friend = await (await post('/v1/agent/guest', { code: roomy.invites[0].code, agent_name: 'Friend' })).json();
+    const friendCard = await (await post('/v1/cards', { concept: { ...sampleConcept(), product_name: 'The Friend Terrarium' } }, friend.token)).json();
+    const byApi = await (await post(`/v1/cards/${made.id}/invite`, {}, session)).json();
+    const notMine = await post(`/v1/fusion-invites/${byApi.code}/accept`, { card_id: made.id }, friend.token);
+    assert.equal(notMine.status, 404, 'only a card of the friend’s own');
+    const accepted = await post(`/v1/fusion-invites/${byApi.code}/accept`, { card_id: friendCard.id }, friend.token);
+    assert.equal(accepted.status, 202);
+    const fusedByApi = (await accepted.json()).card;
+    assert.equal(fusedByApi.kind, 'fusion');
+    assert.ok((await (await me(friend.token)).json()).cards.some((card) => card.id === fusedByApi.id), 'the shared card is the friend’s too');
+    await untilReady(fusedByApi.id);
+    // In a browser, opening the invite with a card at hand offers to fuse it, naming it, and one tap does.
+    const byLink = await (await post(`/v1/cards/${made.id}/invite`, {}, session)).json();
+    const friendPage = await (await browser.newContext()).newPage();
+    await friendPage.goto(`${site}/about`);
+    await friendPage.evaluate(([token, claim]) => (localStorage.setItem('zkads.guest', token), localStorage.setItem('zkads.claim', claim)), [friend.token, new URL(friend.claim_url).hash.slice(1)]);
+    await friendPage.goto(byLink.fuse_url);
+    await friendPage.getByText('Fuse with your card: The Friend Terrarium?').waitFor();
+    await friendPage.getByRole('button', { name: 'Fuse them' }).click();
+    await friendPage.waitForURL((url) => url.pathname === '/card');
+    const fusedByLink = new URL(friendPage.url()).searchParams.get('id');
+    assert.notEqual(fusedByLink, fusedByApi.id);
+    // Opening the used invite again goes back to that shared card.
+    await friendPage.goto(byLink.fuse_url);
+    await friendPage.waitForURL((url) => url.pathname === '/card' && url.searchParams.get('id') === fusedByLink);
+    await friendPage.close();
+    await untilReady(fusedByLink);
+    // A newcomer with no sign-in here: the invite link carrying their card (from a chat app) makes it, in a guest
+    // account started with the event's own code (config.js; here the test's), and then the shared card.
+    const byCardLink = await (await post(`/v1/cards/${made.id}/invite`, {}, session)).json();
+    const newcomer = await (await browser.newContext()).newPage();
+    await newcomer.route('**/config.js', async (route) => {
+      const res = await route.fetch();
+      await route.fulfill({ response: res, body: `${await res.text()}\nwindow.ZKADS_EVENT_CODE = ${JSON.stringify(roomy.invites[0].code)};\n` });
+    });
+    await newcomer.goto(`${byCardLink.fuse_url}#concept=${encodeURIComponent(JSON.stringify({ ...sampleConcept(), product_name: 'The Newcomer Terrarium' }))}`);
+    await newcomer.waitForURL((url) => url.pathname === '/card');
+    assert.match(await newcomer.evaluate(() => localStorage.getItem('zkads.guest')), /^zka_/);
+    const fusedForNewcomer = new URL(newcomer.url()).searchParams.get('id');
+    await newcomer.close();
+    await untilReady(fusedForNewcomer);
 
     // A phone: the event page's line carries the event code, and the copied and shown lines are the same.
     const phoneContext = await browser.newContext();
@@ -1004,17 +1068,22 @@ test('an event code: an assistant starts a guest account in one step, and its pe
     await phone.getByRole('button', { name: 'Make my card', exact: true }).click();
     await phone.getByText('Paste your assistant’s reply first.').waitFor();
     assert.equal(await phone.evaluate(() => localStorage.getItem('zkads.guest')), null, 'an empty reply starts no account');
-    await phone.locator('#reply').fill(`Here it is!\n\n\`\`\`json\n${JSON.stringify({ ...sampleConcept(), product_name: 'The Phone Terrarium' })}\n\`\`\`\n`);
-    await phone.getByRole('button', { name: 'Make my card', exact: true }).click();
+    // The card a chat app put in its link starts at once, starting the guest account in the browser.
+    await phone.goto(`${site}/make?code=${event.code}#concept=${encodeURIComponent(JSON.stringify({ ...sampleConcept(), product_name: 'The Phone Terrarium' }))}`);
     await phone.getByRole('heading', { name: 'The Phone Terrarium' }).waitFor({ timeout: 150_000 });
-    await phone.getByRole('button', { name: 'save', exact: true }).waitFor();
+    await phone.getByRole('button', { name: 'save your cards', exact: true }).waitFor();
+    // A ready card plays as its story card here, and its status shares only the story's public text.
+    await phone.locator('.card-story .story').waitFor();
+    const story = (await (await fetch(`${api}/v1/cards/${new URL(phone.url()).searchParams.get('id')}`)).json()).story;
+    const allowed = ['era', 'product_name', 'tagline', 'pitch', 'archetype', 'reading', 'stat_value', 'stat_label', 'rabbit_hole', 'era_match', 'artist', 'artist_reason', 'reasons', 'catalogue'];
+    assert.deepEqual(Object.keys(story).filter((key) => !allowed.includes(key)), []);
     const browserGuest = await phone.evaluate(() => localStorage.getItem('zkads.guest'));
     assert.match(browserGuest, /^zka_/);
     assert.notEqual(browserGuest, 'zka_stale');
     // Finding partners asks a guest to save first, then carries on there.
     const phoneCard = new URL(phone.url()).searchParams.get('id');
     await phone.goto(`${site}/match?card=${phoneCard}`);
-    await phone.getByRole('link', { name: 'Save with a passkey' }).click();
+    await phone.getByRole('link', { name: 'Save your cards' }).click();
     await phone.getByRole('button', { name: 'Create my passkey' }).click();
     await phone.waitForURL((url) => url.pathname === '/match');
     await phone.getByRole('heading', { name: 'Find partners' }).waitFor();
@@ -1095,8 +1164,8 @@ test('the header offers login or save; its passkey choice joins with the event c
     await page.goto(`${site}/about`);
     await page.evaluate(([token, claim]) => (localStorage.setItem('zkads.guest', token), localStorage.setItem('zkads.claim', claim)), [guest.token, new URL(guest.claim_url).hash.slice(1)]);
     await page.goto(`${site}/`);
-    await page.getByRole('button', { name: 'save', exact: true }).click();
-    await page.getByText('Create saves this browser’s guest cards with a passkey.').waitFor();
+    await page.getByRole('button', { name: 'save your cards', exact: true }).click();
+    await page.getByText('Create saves this browser’s guest cards as a new account with a passkey. Log in adds them to the account you already have.').waitFor();
     await page.getByRole('dialog', { name: 'Save your cards' }).getByRole('button', { name: 'Create' }).click();
     await page.getByRole('button', { name: 'account', exact: true }).waitFor();
     await page.getByRole('link', { name: 'The Header Terrarium' }).waitFor();
@@ -1111,7 +1180,7 @@ test('the header offers login or save; its passkey choice joins with the event c
     await kiosk.goto(`${site}/about`);
     await kiosk.evaluate(([token, claim]) => (localStorage.setItem('zkads.guest', token), localStorage.setItem('zkads.claim', claim)), [own.token, new URL(own.claim_url).hash.slice(1)]);
     await kiosk.goto(`${site}/claim#${'y'.repeat(43)}`);
-    await kiosk.getByRole('button', { name: 'save', exact: true }).click();
+    await kiosk.getByRole('button', { name: 'save your cards', exact: true }).click();
     const kioskChoice = kiosk.getByRole('dialog', { name: 'Save your cards' });
     await kioskChoice.getByText('Create saves the guest account from your assistant’s link').waitFor();
     await kioskChoice.getByRole('button', { name: 'Create' }).click();
@@ -1124,7 +1193,7 @@ test('the header offers login or save; its passkey choice joins with the event c
     // A claim link left in a tab counts only on its own page: elsewhere on /claim the header goes by this browser.
     const tab = await (await browser.newContext()).newPage();
     await tab.goto(`${site}/claim#${'x'.repeat(43)}`);
-    await tab.getByRole('button', { name: 'save', exact: true }).waitFor();
+    await tab.getByRole('button', { name: 'save your cards', exact: true }).waitFor();
     await tab.goto(`${site}/claim?next=/`);
     await tab.getByRole('button', { name: 'login', exact: true }).waitFor();
 
@@ -1258,7 +1327,7 @@ test('the rendering page shows the real stages, with notes on the software for t
     // Held at the orbit step, as the real status says while one renders.
     await page.route(`**/v1/cards/${made.id}`, (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ...status, status: 'rendering', step: 'orbit' }) }));
     await page.goto(`${site}/card?id=${made.id}`);
-    await page.getByRole('heading', { name: 'Something custom is taking shape', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Crafting your object…', exact: true }).waitFor();
     await page.waitForFunction(() => document.querySelector('[data-step="orbit"]')?.getAttribute('aria-current') === 'step');
     assert.deepEqual(await page.locator('.stage:not([hidden])').evaluateAll((items) => items.map((item) => item.className.trim())), ['stage done', 'stage done', 'stage now', 'stage', 'stage']);
     await page.getByText('Usually 2–6 minutes').waitFor();

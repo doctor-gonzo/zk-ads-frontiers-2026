@@ -411,6 +411,63 @@ test('saving a guest account takes its cards out of matching and names their sum
   assert.deepEqual((await registry.card(open.id)).badge, badge);
 });
 
+test('a member takes a guest account’s cards: they move, and whoever held the guest sign-in keeps nothing', async () => {
+  const { registry, store } = memoryRegistry();
+  await registry.createInvites([{ hash: 'event', label: 'frontiers', uses: 5 }], NOW, { event: true, expires_at: NOW + 86_400_000 });
+  const guestOf = (n) => ({ invite: 'event', user: { id: `g${n}`, handle: `zkads-g${n}` }, token: { hash: `t${n}`, record: { owner: `user:g${n}`, label: 'Claude', scope: 'agent', created_at: NOW, expires_at: NOW + 30 * 86_400_000 } }, claim: `c${n}` });
+  assert.ok((await registry.createGuest(guestOf(1), NOW)).ok);
+  const from = 'user:g1';
+  const card = (letter, extra = {}) => ({ id: letter.repeat(20), owner: from, status: 'ready', files: [], created_at: NOW, updated_at: NOW, ...extra });
+  const open = card('o', { matching: { open: true, until: NOW + 3_600_000 }, sponsor: { brand: 'b1', credited_to: from } });
+  const draft = card('d', { status: 'waiting_summary', write: { kind: 'summary' }, drafted_at: NOW });
+  // One more of its cards is open to matching but has fallen off its list.
+  const unlisted = card('u', { matching: { open: true, until: NOW + 3_600_000 } });
+  const other = card('x', { owner: 'user:someone' });
+  const mine = card('m', { owner: OWNER });
+  for (const c of [open, draft, unlisted, other, mine]) store.set(`card:${c.id}`, c);
+  store.set(`cards-of:${from}`, [open.id, draft.id]);
+  store.set(`cards-of:${OWNER}`, [mine.id]);
+  store.set('pool', [open.id, unlisted.id, other.id]);
+  store.set(`credits:${from}`, 3);
+  store.set(`credits:${OWNER}`, 2);
+  store.set('fusion-invite:old', { card_id: open.id, owner: from, status: 'open', created_at: NOW, expires_at: NOW + 86_400_000 });
+
+  assert.equal((await registry.mergeGuest({ claim: 'nope', owner: OWNER }, NOW)).code, 'bad_claim');
+  assert.equal((await registry.mergeGuest({ claim: 'c1', owner: from }, NOW)).code, 'bad_claim', 'not into itself');
+  assert.deepEqual(await registry.mergeGuest({ claim: 'c1', owner: OWNER }, NOW + 1000), { ok: true, moved: 3, forget: [`card:${open.id}`, `card:${draft.id}`, `draft:${draft.id}`, `card:${unlisted.id}`] });
+  assert.deepEqual(store.get(`cards-of:${OWNER}`), [open.id, draft.id, unlisted.id, mine.id]);
+  assert.ok(!store.has(`cards-of:${from}`));
+  for (const id of [open.id, draft.id, unlisted.id]) assert.equal((await registry.card(id)).owner, OWNER);
+  // As on saving: out of matching, drafts from before failed, and someone else's card untouched.
+  assert.deepEqual([(await registry.card(open.id)).matching, (await registry.card(unlisted.id)).matching], [{ open: false }, { open: false }]);
+  assert.equal((await registry.card(draft.id)).status, 'failed');
+  assert.deepEqual(store.get('pool'), [other.id]);
+  assert.equal((await registry.card(other.id)).owner, 'user:someone');
+  assert.deepEqual([await registry.credits(OWNER), await registry.credits(from)], [5, 0]);
+  assert.equal(await registry.token('t1', NOW + 1000), null, 'the guest sign-in ended');
+  assert.equal(await registry.claimable('c1', NOW + 1000), null, 'and its claim code is used up');
+  assert.equal((await registry.mergeGuest({ claim: 'c1', owner: OWNER }, NOW + 2000)).code, 'bad_claim', 'once');
+  assert.equal(await registry.fusionInvite('old', NOW + 2000), null, 'its fusion invites from before stop counting');
+  assert.deepEqual([(await registry.user('g1')).guest, (await registry.user('g1')).merged_into], [false, OWNER]);
+  // A sponsorship under way now credits the member, a draft refunded later cannot wait again, and a proof
+  // the guest sign-in started puts no badge on the member's card.
+  assert.equal((await registry.card(open.id)).sponsor.credited_to, OWNER);
+  assert.equal((await registry.card(draft.id)).drafted_at, undefined);
+  await registry.saveProof('p-guest', { card_id: open.id, owner: from, status: 'pending', created_at: NOW + 1500, expires_at: NOW + 1_800_000 });
+  assert.deepEqual(await registry.finishProof('p-guest', { status: 'verified', badge: P1 }, 'jp', NOW + 2000), { ok: true, card: null });
+  assert.equal((await registry.card(open.id)).badge, undefined);
+
+  // A guest with a fused card is refused, untouched, to be saved instead.
+  assert.ok((await registry.createGuest(guestOf(2), NOW)).ok);
+  const fused = card('f', { owner: 'user:friend', co_owner: 'user:g2', kind: 'fusion' });
+  store.set(`card:${fused.id}`, fused);
+  store.set('cards-of:user:g2', [fused.id]);
+  assert.equal((await registry.mergeGuest({ claim: 'c2', owner: OWNER }, NOW)).code, 'has_fusions');
+  assert.ok(await registry.token('t2', NOW));
+  assert.ok(await registry.claimable('c2', NOW));
+  assert.equal((await registry.card(fused.id)).co_owner, 'user:g2');
+});
+
 test('revoking an event code takes its unsaved guests’ cards out of matching', async () => {
   const { registry, store } = memoryRegistry();
   await registry.createInvites([{ hash: 'event', label: 'frontiers', uses: 5 }], NOW, { event: true, expires_at: NOW + 86_400_000 });

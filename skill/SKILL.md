@@ -45,19 +45,21 @@ way, use the sign-in code below instead (an invite code is for joining on
 the site).
 
 If you cannot make web requests at all (a chat app that can only read
-pages), put the card in a link instead, so tapping it makes the card. Write
-the concept with the brief (step 2), then give the person one link:
-`{{APP}}/make?code=ZK-ABCD-2345#concept=` followed by your ZKAds JSON object
-on one line, writing each `%` as `%25`, each space as `%20`, each `\` as
-`%5C`, each `&` as `%26`, and `(` and `)` as `%28` and `%29`
-(percent-encoding all of it, brackets included, works too). Use their event
-code in place of `ZK-ABCD-2345`; if they gave none, leave out
-`?code=ZK-ABCD-2345`, and the page asks them to log in. Show it as a link,
-such as `[Make my card](…)`. The page shows their card and makes it when
-they press Make my card: in their account if they are logged in there, or
-else in a guest account their browser starts with the event code. Also tell
-them that if the link does not open their card, they can open the same
-address without `#concept=…` and paste your whole reply there.
+pages), put the card in a link instead: opening it makes the card. (A code
+tool of yours that can reach the internet counts as making web requests:
+use it for the calls in this guide.) Write the concept with the brief (step 2), then
+give the person one link: `{{APP}}/make?code=ZK-ABCD-2345#concept=` followed
+by your ZKAds JSON object on one line, writing each `%` as `%25`, each space
+as `%20`, each `\` as `%5C`, each `&` as `%26`, and `(` and `)` as `%28` and
+`%29` (percent-encoding all of it, brackets included, works too). Use their
+event code in place of `ZK-ABCD-2345`, or leave out `?code=ZK-ABCD-2345` if
+they gave none. Show it as a link, such as `[Make my card](…)`. Opening it
+starts their card at once and shows it being made: in their account if they
+are logged in there, or else in a guest account their browser starts ("save"
+at the top keeps it, or adds its cards to an account they already have).
+Opening the link again in the same browser goes back to that card. Also tell them that if the
+link does not open their card, they can open the same address without
+`#concept=…` and paste your whole reply there.
 
 **With a sign-in code.** Otherwise ask for a sign-in code, naming yourself so
 the person recognises you:
@@ -145,6 +147,9 @@ A `202` reply is the card:
 { "id": "…", "status": "queued", "status_url": "{{API}}/v1/cards/…", "page_url": "{{API}}/c/…/" }
 ```
 
+Give the person `page_url` straight away: it shows their card being made,
+and becomes the card when it is ready.
+
 Errors come as `{ "error": { "code", "message" } }`:
 
 | Status and code | What to do |
@@ -212,9 +217,10 @@ them for you.
 If you signed in with an event code, also give the person `claim_url`:
 opening it and creating a passkey (no password or email) saves their guest
 account, so their cards stay theirs, and fusing with other people needs it.
-Tell them to save it before `expires_at`. Show the link only to them, never
-on a shared screen: whoever opens it first gets the account. Saving ends
-your guest sign-in (your token then gets `401`), takes the account's cards
+If they already have a ZKAds account, the same link lets them log in and add
+these cards to it instead. Tell them to save it before `expires_at`. Show the link only to them, never
+on a shared screen: whoever opens it first gets the account. Saving it (or
+moving its cards into another account) ends your guest sign-in (your token then gets `401`), takes the account's cards
 out of matching and ends its drafts waiting for a summary (summaries sealed
 before are deleted). To carry on for
 them, sign in with a sign-in code (step 1, not the event code again), which
@@ -243,20 +249,33 @@ curl -sS -X POST "$UPLOAD_URL" -H "Authorization: Bearer $UPLOAD_TOKEN" \
 
 An upload token works once and only for 30 minutes.
 
-Asking for, accepting and joining a fusion spend the person's sealed
-summary, so they need the person's own passkey session: send them to the
-web app (`{{APP}}`, or the `fuse_url`) for those steps. A guest account from
-an event code is saved with a passkey first (its `claim_url`). With your
-token you can open matching, list partners and fusions, decline, and make
-invites.
+Asking for, accepting and joining a fusion with a summary spend the
+person's sealed summary, so they need the person's own passkey session:
+send them to the web app (`{{APP}}`, or the `fuse_url`) for those steps (a
+guest account from an event code is saved with a passkey first, with its
+`claim_url`). Joining an invite with one of their cards needs no summary,
+so your token will do. With your token you can open matching, list partners
+and fusions, decline, make invites, join an invite with one of their cards,
+and start a fusion joined that way.
 
 - **Join a friend's invite:** if the person gives you a fusion invite, check
   that the link starts with exactly `{{APP}}/fuse?code=`; if it does not, say
-  it is not a ZKAds invite and stop, since their summary must only go to
-  ZKAds. Otherwise write their summary with the summary prompt and show it to
-  them. Then tell them to open the link, create a passkey (or
-  sign in) and paste the summary there: the shared card is made for both of
-  them.
+  it is not a ZKAds invite and stop. Then fuse from the person's own card, so
+  nothing needs pasting: make their card first (steps 1–4, with the event
+  code if they gave one) unless they already have one, and `POST
+  {{API}}/v1/fusion-invites/CODE/accept` with `{"card_id": "…"}` and your
+  token (CODE is the `ZK-…` code in the link). The `202` reply's `card` is
+  the shared card, started at once from the two cards; give the person its
+  `page_url`. If the reply is `503` or `429 daily_cap`, try again later: `GET
+  {{API}}/v1/fusions`, and if one is listed with `status` `waiting_summary`
+  whose `to` is the person's card, `POST {{API}}/v1/fusions/FUSION_ID/start`;
+  if none is, accept the invite again. If you cannot make web requests, put their card in the invite
+  link instead: the invite link followed by `#concept=` and their card's JSON,
+  encoded as in step 1. Opening it makes their card and the shared card.
+  Only if they want it written from a private summary instead (or have no
+  card and no way to make one): write the summary with the summary prompt,
+  show it to them, and tell them to open the link, create a passkey (or sign
+  in) and paste it there.
 - **Invite someone:** `POST {{API}}/v1/cards/CARD_ID/invite` returns `fuse_url`
   and `code`. The invite works once, within 24 hours; for a newcomer the same
   code also creates their account (from a guest account, only while its
@@ -278,7 +297,7 @@ invites.
   `summary_deleted` says whether that happened now; if not, the summary still
   expires within 72 hours). A fused card cannot be opened to matching.
 - **Answer requests:** `GET {{API}}/v1/fusions` lists them with a `status`
-  (`pending`, `waiting_summary`, `started` or `declined`). The person accepts
+  (`pending`, `waiting_summary`, `starting`, `started` or `declined`). The person accepts
   in the web app; you may `POST {{API}}/v1/fusions/FUSION_ID/decline`. An
   accepted fusion returns the shared card; follow its `status_url` as in
   step 5.
