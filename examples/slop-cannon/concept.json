@@ -1,0 +1,33 @@
+{
+  "artist": "Charles and Ray Eames",
+  "product_name": "The Slop Cannon",
+  "era": "San Francisco, 2086",
+  "tagline": "Built for your particular way of building.",
+  "pitch": "Turns a rough idea into a volley of prototypes, tuned to your tools and guided by your taste. Set the brass dial toward the bigger idea and fire: a rubber duck to talk it through, a pair of braces for structure, a tiny rocket for the bold version. Green lights show which experiments passed, so you keep what is worth refining.",
+  "price": "Three rough ideas, paid on loading",
+  "fine_print": "Not a weapon: fires only ideas. Rubber duck not rated for production use.",
+  "share_caption": "Meet The Slop Cannon, a fictional 1/1 product ZK Ads imagined for one maker: a rough idea goes in, a volley of prototypes comes out. #ZKAds",
+  "style_notes": "A polished 3D product render in the spirit of mid-century designer toys: rounded, chunky forms, glossy cherry-red enamel with soft bevels, satin black wheels, small brass fittings and tiny green indicator lights. Soft, flattering studio light and a gentle grounding shadow on a seamless warm-ivory sweep. A restrained red, black and brass palette with one acid yellow-green accent. Clean, tactile and friendly; nothing industrial or aggressive.",
+  "image_prompt": "A friendly cannon, like the cannon emoji turned into a polished 3D designer toy. A short, chunky, rounded barrel in glossy cherry-red enamel with soft bevels, its dark open muzzle tilted upward, rests on a compact, toy-like red carriage with two simple matte-black wheels. A small brass aiming dial with a pointer sits on the side of the carriage, and a neat row of three glowing green test lights runs along its top. Rising from the muzzle is one sculpted, frozen swirl of white paper ribbon, fixed in place as part of the sculpture, carrying a yellow rubber duck, two chunky black curly-brace shapes like toy blocks, and a tiny white prototype rocket with acid yellow-green fins, plus a few small paper scraps. A seamless warm-ivory studio sweep, a soft grounding shadow and flattering soft product light. Clean, tactile and cheerful: no smoke, fire, sludge or mess.",
+  "orbit_prompt": "A friendly red toy cannon seen from every side: a chunky, rounded, glossy barrel tilted up with a dark open muzzle, a compact red carriage, two matte-black wheels, a brass aiming dial on one side and three green test lights on top. A frozen white paper-ribbon swirl rises from the muzzle, holding a yellow rubber duck, two curly-brace shapes and a tiny rocket, all fixed in place. A seamless warm-ivory studio sweep all around.",
+  "archetype": "The Iterative Inventor",
+  "reading": "You use quick prototypes to ask better questions, then test what deserves to ship.",
+  "stat_value": "1/1",
+  "stat_label": "built around one fictional maker",
+  "rabbit_hole": "The edge case that turns a quick fix into a better design",
+  "era_match": "the keeper of the city's prototype workshop",
+  "artist_reason": "because the Eameses learned by making playful prototypes, and so do you",
+  "music_prompt": "A playful, curious workshop groove: plucked marimba, soft brushed drums, upright bass and a light whistled hook, with gentle clockwork ticks. Warm and optimistic, about 100 BPM. Instrumental, no vocals.",
+  "reasons": [
+    { "you": "You learn by building.", "so": "each volley fires a few small experiments instead of one big guess" },
+    { "you": "You test your assumptions.", "so": "green test lights show which experiments earned another round" },
+    { "you": "You care how the pieces fit.", "so": "a brass aiming dial keeps every prototype pointed at the bigger idea" }
+  ],
+  "catalogue": [
+    { "name": "The Edge-Case Lantern", "era": "Alexandria, 280 BC", "teaser": "Illuminates the one route your happy-path demo never took" },
+    { "name": "The Refactor Loom", "era": "Lyon, 1804", "teaser": "Weaves the experiments that worked into something you can build on" }
+  ],
+  "setting": "sci-fi",
+  "typeface": "Didot",
+  "accent_color": "#DFFF38"
+}

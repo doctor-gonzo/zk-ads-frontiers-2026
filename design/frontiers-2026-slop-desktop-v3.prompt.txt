@@ -1,0 +1,20 @@
+Generation mode: built-in image_gen
+Reference images: frontiers-2026-slop-mobile-v3.png; zkads-logo-reference.png
+Scope: exploratory UX concept; not implemented app behavior.
+Bullet source: app/app.js, welcome(). Copy behavior: retain the event code in the assistant prompt, as eventPage() does.
+
+Use case: ui-mockup
+Asset type: Minimal responsive desktop homepage for ZKAds.
+Input image 1: the FINAL mobile homepage design to adapt to a wide desktop layout. Preserve ALL its exact words, correct bullet copy, logo, palette, interface controls, cannon design, and simple visual language.
+Input image 2: the supplied logo source. Use its exact black angular interlocking ZK plus bold Ads mark, tightly cropped around the black artwork. Preserve logo geometry and proportions. Do not use a serif ZKAds wordmark.
+Primary request: Show the same homepage as image 1 as ONE beautiful wide desktop screenshot, 16:10 landscape. Flat UI screenshot, no monitor frame, no browser chrome, no phone, no multi-screen board. Very minimal warm ivory background, black text, refined editorial serif headlines, neutral sans body, thin rules, yellow-green Copy prompt action, red Slop Cannon illustration. Clean surfaces, no grain or glitch.
+Layout: spacious 64px outer margins. Slim top row: small supplied angular logo at left, fingerprint icon + "Save" outlined button at far right, one thin rule below. No other navigation. Below, two calm columns with a wide gutter and NO vertical divider: concept explanation on the left 46%, example on the right 54%. Keep both columns fully visible in the screenshot. Do not force a tiny font; body text should be genuinely readable at normal desktop scale.
+Left column: bold but refined serif heading "For an audience of one." in two lines. Beneath, the EXACT four bullets from the mobile image, comfortable line spacing:
+• Your agent compiles a profile based on your history (no sensitive data)
+• Sends this data to a TEE to create a custom product for you
+• Drawn in the style of an artist picked for you, as a 360° video rendered with Venice
+• You can merge your history with someone else’s for a shared product
+Below the bullets, plenty of breathing space and ONE broad acid-yellow button "Copy prompt" with copy icon. No subtext.
+Right column: tiny mono eyebrow "EXAMPLE / FICTIONAL PRODUCT"; modest serif heading "The Slop Cannon"; compact two-line sans description "Industrial-grade output. Homeopathic amounts of thought." Then the exact red and cream wheeled SLOP-9000 cannon in image 1, glass hopper of lavender and cream goo, paper arc and leading sheet reading "Absolutely!", prominent but with ample margin, on uninterrupted ivory. Under the render, one fine-rule-separated small metrics row "10,000 takes/min" and "0 original thoughts". Finally a small utility row "↻ 360° preview" and "Why this exists ↗".
+Copy behavior context ONLY, never visible text: Copy prompt includes the real event code from the event URL with the assistant instruction. Never invent a code or URL in the design. Header Save is for a passkey.
+Constraints: preserve all four bullets verbatim, supplied logo, exact copy, humorous example and minimal spacious styling. No sidebar, extra menu, dark panels, cards within cards, fake verified badges, account fields, signup explanation or privacy helper text. No "Make it here", "Make mine", "No sign-up", or "Your assistant keeps your chats". Do not add or drop words. This is the final desktop counterpart of the supplied mobile homepage.

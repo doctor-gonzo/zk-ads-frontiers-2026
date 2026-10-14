@@ -1,0 +1,19 @@
+Use case: ui-mockup
+Asset type: final revised ZK Ads desktop About page, one clean complete screenshot at approximately the same 1536 x 1024 composition as image 1.
+Image 1 is the edit target: the approved About v2 design. Image 2 is the original badge, a preservation reference. Preserve the same ivory background, angular black ZKAds logo, red/green/cyan/ivory badge artwork, thin black rules, two-column grid and acid-yellow primary button. Preserve the global navigation: logo left; fingerprint login button then circled ? at upper right. Preserve small "← Back" and "ABOUT" below the navigation.
+Make only these requested changes and necessary spacing adjustments:
+1. Completely remove the large "About ZK Ads" heading. Do not replace it with another heading or leave its empty gap. Keep only the small ABOUT eyebrow for page identification.
+2. Completely remove the monospace prompt-preview text and its bordered preview box. No quoted prompt excerpt anywhere. Keep the overlap heading, helper, Copy intro prompt and read prompt controls.
+3. Use the freed space to increase the body type substantially (about 20–25 percent larger than image 1), including the main two paragraphs and overlap helper. Keep comfortable line height and a readable column width. Button labels and links should also be comfortably readable. Avoid giant extra headings.
+4. Beneath the badge, keep "charliethompson.lol ↗" on the first line. Add an underlined "LinkedIn ↗" link and an underlined "Twitter ↗" link side by side on the next line. These are always visible, not tucked inside Contact. No social logos required.
+Exact main copy in the left column, starting near the top of the badge:
+"ZK Ads is a privacy-focused advertising system in development. It is designed to make ads relevant without giving advertisers the underlying personal data."
+"Its design combines a user-controlled vault, zero-knowledge proofs and confidential matching. The broader plan shares value with readers and publishers through rewards or access to content."
+Below the main copy and a thin rule:
+Serif heading "Where do we overlap?"
+Helper: "Paste this into your AI assistant to find connections between your work and mine."
+Directly below the helper, a full-column flat acid-yellow button "Copy intro prompt" with copy icon.
+Directly below that, a restrained outlined "read prompt" button.
+Then a little whitespace and the CLOSED accordion row "Contact", with downward chevron at far right and thin rules top/bottom. No invitation text visible while collapsed.
+Right column: keep the supplied full badge intact, unstretched and uncropped, all the original writing visible: Paradigm, Charlie Thompson, @doctor-gonzo, Frontiers. Keep the original badge's proportions. A thin vertical rule separates the columns.
+Make the screen feel balanced and readable, not sparse from the deleted elements. Keep the same global page height or compact slightly; do not add extra content to fill space. No personal introduction, no personal technology/shared upside title, no At Frontiers section, no About ZK Ads headline, no preview block. Do not redraw the page as an illustration or include device/browser chrome.

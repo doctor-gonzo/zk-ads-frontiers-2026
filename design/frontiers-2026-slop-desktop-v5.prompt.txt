@@ -1,0 +1,18 @@
+Generation mode: built-in image_gen
+Reference: frontiers-2026-slop-mobile-v5.png
+Scope: UX mockup and implementation reference, not implemented behavior.
+
+Use case: ui-mockup
+Asset type: Final desktop homepage matching the approved mobile ZKAds homepage.
+Input image 1: approved mobile homepage. Adapt it responsively to desktop, preserving EXACT logo, all THREE bullets, both adjacent action buttons, palette, type style, red cannon artwork, and all copy. Do not include a modal in this screenshot.
+Format: ONE high-fidelity wide desktop interface screenshot, 16:10 landscape, flat front-on, no browser chrome, no monitor, no presentation board.
+Layout: warm ivory page, generous 64px outer margins, black angular supplied ZKAds logo top left, fingerprint icon + outlined "Save" at top right, thin rule underneath. Main area uses two generous columns and plenty of negative space. Left = concept explanation and actions. Right = Slop Cannon example. No decorative vertical divider.
+Left heading: "For an audience of one."
+Three bullets, EXACT:
+• Your agent compiles a profile based on your history (no sensitive data)
+• Sends this data to a TEE to create a 1/1 product tailored to you (rendered by Venice)
+• You can merge your history with someone else’s for a shared product
+Under bullets, two adjacent equal-height actions: wide acid-yellow-green "Copy prompt" with copy icon, and narrower outlined ivory "Example" with down chevron. No helper subtext.
+Right example: tiny "EXAMPLE / FICTIONAL PRODUCT", modest serif "The Slop Cannon", two-line sans description "Industrial-grade output." / "Now with 40% more “delve”." Then the SAME red wheeled cannon with glass hopper, cream/lavender slop and flying paper marked "Absolutely!". On seamless ivory, generous space. Under it thin-rule-separated "10,000 takes/min" and "0 original thoughts"; bottom quiet links "↻ 360° preview" and "Why this exists ↗".
+Save opens the Log in/Create passkey modal; Copy prompt includes the real event code; Example navigates to the example section. These are behavior context only, not extra visible labels.
+Constraints: only three bullets, no old artist bullet, no homeopathic joke. Exact angular user logo, NOT a serif text wordmark. No signup/privacy helper text, no Make it here, no gradients, grain, glitch, dark panels, cards within cards or dashboards. Keep the calm minimal brand and the product's joke as the focal point.

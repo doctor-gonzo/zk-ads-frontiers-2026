@@ -1,0 +1,32 @@
+Generation mode: built-in image_gen
+Reference images: frontiers-2026-slop-mobile-v2.png; zkads-logo-reference.png
+Scope: exploratory UX concept; not implemented app behavior.
+Bullet source: app/app.js, welcome(). Copy behavior: retain the event code in the assistant prompt, as eventPage() does.
+
+Use case: ui-mockup
+Asset type: Minimal high-fidelity mobile homepage, complete vertically scrollable page capture.
+Input image 1: existing minimal Slop Cannon mobile homepage. Edit it as specified below, preserving the red Slop Cannon render, quiet warm ivory palette and single acid-yellow button.
+Input image 2: the USER-SUPPLIED official ZKAds logo. This is the exact logo to use. Replace the serif text wordmark from image 1 with this black angular interlocking ZK + bold Ads logo. Preserve the mark's geometry and proportions, omit its large white surrounding margins, and integrate just the black logo on the page's ivory background. Do not invent a different logo, do not use serif ZKAds text, do not stretch or redraw the lettering creatively.
+
+Primary change: The MOBILE HOME PAGE must explain the concept using the EXACT four bullet points from the current app, and then show the Slop Cannon example. Preserve the compact fingerprint Save button in the top header. Keep Copy prompt as the single primary action near the concept explanation, before the example. This is an event-only page, so the copied text includes the invite code from the event URL. Do not show or invent a code on screen.
+
+Format: ONE seamless tall mobile page screenshot, portrait aspect ratio approximately 1:2.7, representing a 390px-wide scrollable webpage at about 1050 CSS px content height, rendered at high resolution. This is a FULL-PAGE mobile capture, so allow natural vertical scrolling rather than squeezing content. No phone frame, browser chrome, fake status bar, presentation canvas, split screens or decorative outer borders. Everything fully visible without cropped bottom content. Generous 24px horizontal margins, comfortable 15–16px body text, practical 48px button height.
+
+Design: very minimal and clean. Ivory #F5F4EE page background; near-black text; restrained elegant editorial serif for headings only; neutral sans-serif for readable bullets; tiny monospaced eyebrow. One yellow-green #DFFF38 primary button. No grain, glitch, texture, dark panels, gradient, dense metadata, decorative labels, large numeral circles, or card frames.
+
+Exact page order:
+1. Header: supplied black angular ZKAds LOGO at left, about 100px wide; compact outlined fingerprint icon + "Save" button at right. Fingerprint unmistakably visible. Slim header, fine bottom rule.
+2. Main heading in a restrained 34px-ish serif, left aligned, on two lines: "For an audience of one."
+3. Four simple black bullet points, generous line spacing. Render these VERBATIM, keeping all wording, and wrap naturally. Do not summarize, truncate, omit words, introduce ellipses or add words:
+• Your agent compiles a profile based on your history (no sensitive data)
+• Sends this data to a TEE to create a custom product for you
+• Drawn in the style of an artist picked for you, as a 360° video rendered with Venice
+• You can merge your history with someone else’s for a shared product
+4. One full-width acid-yellow-green button "Copy prompt" with copy icon. No secondary button, no helper text, no signup or privacy subtext below it. Leave clean whitespace.
+5. Thin section divider with generous spacing, then tiny mono label "EXAMPLE / FICTIONAL PRODUCT".
+6. Modest 28px-ish serif heading "The Slop Cannon", followed by a short sans description exactly "Industrial-grade output. Homeopathic amounts of thought." This title must be smaller than the intro heading, not the huge title from image 1.
+7. A large charming product image of the EXACT SLOP-9000 toy from image 1, isolated directly on uninterrupted ivory. Red wheeled industrial cannon, cream short barrel, glass hopper filled with cream and lavender goo, analog dial. Three paper sheets and a small slop arc, leading paper reads "Absolutely!". Keep this image fun, beautifully detailed, visually clear and dominant within its example section, about 260 CSS px high. No extra props.
+8. A subtle thin-rule-separated metrics row, small mono text "10,000 takes/min" and "0 original thoughts".
+9. Small utility row "↻ 360° preview" and "Why this exists ↗", then bottom whitespace.
+
+Must preserve: exact user logo, the existing four bullet points above, Copy prompt on homepage, fingerprint Save at top, Slop Cannon example. The implied copy behavior is: Read the service skill and make a ZKAds card, with the real event code already included. Do not print technical placeholder copy. Do not add "Make it here", "Make mine", "No sign-up", "Your assistant keeps your chats", invite fields, account forms, other buttons, menu, or security badges. Quiet refined design that balances explaining the idea and showing the funny example.

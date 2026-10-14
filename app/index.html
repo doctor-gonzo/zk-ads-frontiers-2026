@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https: http://localhost:* http://127.0.0.1:*; media-src 'self' https: http://localhost:* http://127.0.0.1:*; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; base-uri 'none'; form-action 'self'; object-src 'none'">
+<title>ZK Ads</title>
+<meta name="description" content="For an audience of one: your own AI assistant and a TEE make a 1/1 product, and its 360° ad, just for you.">
+<meta name="theme-color" content="#f5f4ee">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="alternate" type="text/markdown" href="/skill.md" title="ZKAds skill for AI assistants">
+<link rel="preload" href="/fonts/dm-serif-display-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
+<script src="/config.js"></script>
+<script src="/vendor/simplewebauthn-browser.js"></script>
+<script type="module" src="/app.js"></script>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <a class="brand" href="/"><img src="/logo.png" alt="ZK Ads" width="114" height="34"></a>
+    <nav id="nav" aria-label="Account"></nav>
+  </div>
+</header>
+<main id="view" aria-live="polite"><p class="muted">Loading…</p></main>
+<footer>
+  <p>AI assistants: read <a id="skill-link" href="/skill.md">skill.md</a> to make cards.</p>
+  <p><a href="https://github.com/doctor-gonzo/zk-ads-frontiers-2026" rel="noopener">Open source on GitHub</a></p>
+</footer>
+</body>
+</html>

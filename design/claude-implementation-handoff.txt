@@ -1,0 +1,302 @@
+Implement the attached ZKAds UX in the existing application. Continue from the existing implementation; do not restart the product or build a separate mock app.
+
+REPOSITORY AND CURRENT STATE
+Repo: /Users/charlie/Desktop/xoCortex/projects/paradigm-frontiers/zkads
+Branch inspected: main. Latest HEAD inspected for this prompt: 7d917f1.
+This is its own Git repository inside paradigm-frontiers. Work only in zkads; do not modify chat-history-game or sibling projects.
+Exception explicitly requested by the user: read /Users/charlie/Desktop/xoCortex/projects/zk-ads for the About page's summary of the main ZK Ads project. This is read-only reference access; do not change that repository.
+This handoff session created design artifacts only. It did not implement the redesign, change authentication, deploy, or start development servers.
+Before editing, read applicable AGENTS.md instructions and git status --short; preserve unrelated changes. Recheck HEAD because later design commits or other work may exist.
+The latest inspected tree was clean. The site-address changes in 7d917f1 are existing work; preserve them and recheck current deployment configuration.
+
+AUTHORITATIVE REFERENCES
+Use the supplied photos together with these files:
+- design/frontiers-2026-slop-mobile-v5.png — final full mobile homepage.
+- design/frontiers-2026-slop-desktop-v6.png — final desktop homepage. IMPORTANT: no Example button on desktop.
+- design/frontiers-2026-mobile-flow-v5.png — entry, Save modal, real rendering status, object reveal.
+- design/frontiers-2026-mobile-story-v6.png — You, Why, Catalogue, Fuse.
+- design/zkads-logo-reference.png — original user-provided angular black logo; use this rather than approximating its lettering.
+- design/charlie-frontiers-badge-v2.png — latest user-provided Frontiers badge, with the pale right side and red/green/cyan artwork. Use this exact image on About, preserving its artwork, name and handle; it replaces the earlier badge.
+- design/frontiers-2026-about-v3.png — final desktop About page concept, with larger body text, no large page title or prompt preview, social links beneath the badge and Contact collapsed. Adapt it to the mobile layout described below. The written content and original badge/logo remain authoritative; About v1 and v2 are superseded.
+- design/charlie-overlap-prompt.txt — the complete public introduction prompt, also included below; use this exact text for About's copy/read controls.
+The written requirements in this prompt override incidental differences or text mistakes in generated images. Earlier numbered concepts are superseded. All example personal data in the boards is fictional.
+The older screenshots predate the account-aware header labels, read-prompt window, revised loading headline, question-mark software help, About navigation, and revised Slop Cannon concept specified below. Implement these latest written requirements even where the images differ. In particular, replace the old insulting copy and industrial goo-hopper artwork.
+
+GOAL
+Implement the responsive homepage, account-aware passkey choice modal, readable prompt window, example navigation, software-help popovers, About page with a copyable introduction prompt, and complete mobile card story in the existing app. Match the restrained ivory, black and acid-yellow visual direction, with the Slop Cannon providing warm, recognizable humor about making software. Connect real controls to existing functions and APIs. Review and refine the Slop Cannon concept first, generate its actual product render and orbit, and connect those assets so the example works in the live app. The requested demo media generation is in scope; reuse the existing Venice pipeline and deployment workflow.
+
+LATEST DIRECTION — REVIEW THE CONCEPT BEFORE RENDERING
+The user wants a custom product that feels perceptive about their coding process, not a roast about incompetence or AI-generated nonsense. Keep the name The Slop Cannon, but make the joke about the messy, useful path from rough idea to working software: generate possibilities, test assumptions, notice edge cases, refine the parts worth keeping. Speed helps exploration; the maker's judgment gives it direction.
+As Claude, review the proposed copy and visual brief below, improve any weak or patronizing lines, and then implement your refined version. Briefly record what you changed and why. Do not stop at a concept review or another mockup; continue through generation and integration. Do not imply you searched the user's history for this fictional example. Real cards still use their own approved concept data.
+Emphasize the custom aspect throughout: a 1/1 object tailored to one maker's tools, interests, taste and way of working. Every feature should connect to an observable coding habit in the fictional persona. Avoid generic jokes about endless output or lack of original thought. Remove the old "40% more delve", "0 original thoughts", "industrial-strength nonsense", "relentless reprompter" and "one terrible idea" copy from active demo content.
+
+VISUAL DIRECTION
+- Warm ivory around #F5F4EE, near-black text, acid yellow-green around #DFFF38 for the main action.
+- User-supplied angular ZKAds logo, editorial serif headlines, readable sans-serif body, restrained monospace labels.
+- Clean backgrounds, thin rules, generous spacing, nearly square controls. No glitch texture, grain, dark dashboard panels, rainbow gradients, heavy nested cards, or extra UI.
+- Preserve accessible text contrast and 44px minimum touch targets. Use real text and semantic HTML, not a page-sized screenshot.
+- Mobile is a naturally scrolling page, not compressed into one viewport. Keep roughly 24px side margins.
+- Desktop places the explanation/actions in the left column and the example in the right.
+- Use existing plain CSS and DOM architecture. The user referred to desktop CSS/SCSS mode, but adding a Sass pipeline or frontend framework is unnecessary.
+- Use the provided logo's actual black artwork without its large surrounding margins. Inspect app/logo.png first and reuse it if it is already the correct supplied mark.
+- Create/reuse a separate local Slop Cannon artwork asset for the example. Keep interface text out of that asset. The generated mockups are visual references, not interactive page assets.
+
+EXACT HOMEPAGE CONTENT
+Heading:
+For an audience of one.
+
+Exactly THREE bullets:
+1. Your agent compiles a profile based on your history (no sensitive data)
+2. Sends this data to a TEE to create a 1/1 product tailored to you (rendered by Venice)
+3. You can merge your history with someone else’s for a shared product
+
+The old separate artist/360-video bullet is removed.
+
+The top row contains the logo on the left, then an account-aware fingerprint button on the right, followed immediately by a question-mark icon at the far right. The question mark navigates to About; it is separate from the small software-help popovers. Preserve the following account-button rules:
+- No authenticated member session and no existing guest account: label exactly "login" (lowercase, one word).
+- An actual guest account entry has been created and is available to this browser, or a valid guest claim link is being handled: label exactly "save" (lowercase).
+- Do not infer a guest account from an event/invite code, clicking Copy prompt, opening the example, or seeing the demo. These actions do not create a guest entry. Validate stale/expired guest state before presenting it as saveable.
+- Preserve the existing authenticated-member account/My cards navigation once the person has logged in or claimed their guest account; do not present a new signup choice to an already authenticated member.
+
+Below the bullets:
+- Primary Copy prompt button with copy icon.
+- MOBILE ONLY: adjacent outlined Example button with down chevron, around one third of the action-row width. Copy prompt uses the remaining width.
+- DESKTOP: do not render/display the Example control or leave an empty gap. Copy prompt occupies the available action area. Hide the mobile-only control from both layout and keyboard navigation at the desktop breakpoint.
+- On BOTH mobile and desktop, put a separate understated button directly BELOW the yellow Copy prompt button/action row, labelled exactly "read prompt". It opens the readable text window described below. This is a visible secondary action, not helper subtext.
+
+Example section:
+EXAMPLE / FICTIONAL PRODUCT
+The Slop Cannon
+Built for your particular way of building.
+Turns a rough idea into a volley of prototypes. Tuned to your tools, guided by your taste.
+
+Supporting labels: 1/1 custom build; Draft → test → refine.
+These describe the fictional product, not measured facts about the viewer. Do not invent throughput or usage statistics.
+Quiet controls: 360° preview; Why this exists ↗.
+
+Do not restore Make it here, No sign-up to start, or Your assistant keeps your chats as homepage subtext. The phrase "(no sensitive data)" remains in the explicitly approved first bullet.
+
+SLOP CANNON — ACTUAL ARTWORK AND MEDIA
+The cannon should read immediately as a friendly cannon emoji translated into a polished 3D object: a short, chunky, rounded red barrel, a dark open muzzle tilted upward, two simple dark wheels and a compact toy-like carriage. Use soft bevels, tactile enamel and small brass details. Keep the silhouette simple and legible on a phone. Replace the old factory machine/hopper silhouette; do not reproduce the old screenshot's goo apparatus.
+Give it a few bespoke details that express its purpose: a brass aiming dial for choosing direction and a small row of green test lights. Show a playful burst coming out of the muzzle: a rubber debugging duck, a pair of chunky curly braces and a tiny prototype rocket, with a few paper scraps. Keep the props sparse, funny and recognizable; they represent experiments taking shape. No aggression, destruction, contempt, sludge or piles of meaningless output.
+Use a clean warm-ivory studio backdrop, soft grounding shadow, flattering product lighting and the existing red/black/acid-yellow visual palette. Preserve breathing room for the app's real typography. No baked-in interface, product name, captions, fake metrics, logos or readable text in the generated image.
+
+After reviewing the concept:
+1. Save a complete valid fictional concept JSON using lib/concept.mjs and the existing brief/schema, with the updated product, story copy, image_prompt, orbit_prompt and music_prompt. Keep generation prompts within the existing length limits. Do not fabricate a personal history dossier or usage counts.
+2. Generate the actual high-quality 3D-style hero image through the project's existing Venice workflow, using configured models and credentials. This means a rendered product image, not a claim that a downloadable 3D mesh exists. The normal modest image/video generation calls needed for this example are part of the request. Keep keys out of logs and commits.
+3. Inspect the image. The barrel/wheels must read as an emoji-like cannon, the humorous props must visibly emerge from it, and the object must remain clear at mobile size. Iterate on concrete defects if needed.
+4. Generate the real orbit video from the selected image through the existing camera-trajectory pipeline. Keep the cannon and the small burst as a coherent sculptural tableau while the camera moves, so props do not morph or disappear between angles. Inspect the loop and visual continuity. A CSS rotation of a flat image does not satisfy this requirement.
+5. Reuse the existing share/story renderer for the matching example story and any exported story video. Render all copy as HTML/type layers, outside the generated artwork. Sound is off until explicitly enabled.
+6. Save the selected media somewhere durable that the app/deployment actually serves. Runs under out/ are git-ignored; do not leave the only referenced asset there or use local absolute paths in a deployed page. Use the existing public asset or R2 path, preserve source concept/prompts and provenance, and avoid exposing private job data.
+7. Wire the poster, playable orbit and fictional story into both the homepage and /event. The example must work for a signed-out visitor without creating an account, submitting a job or buying a render on page load. Lazy-load the video where appropriate and keep a useful poster if playback fails.
+8. Once checks pass, use the existing project deployment workflow to make the example live, preserving existing production configuration. Verify the public page and media URLs, then report the exact URL. If required credentials or deployment access are unavailable, finish the local implementation and state the specific remaining blocker; do not describe it as live.
+
+Use provider details that reflect how this demo was really generated. A Venice render made locally is not a Phala-attested render. Do not use an unrelated old product video as the Slop Cannon orbit. Existing media may serve as development fixtures only; completion requires the actual cannon render and working orbit.
+
+HOMEPAGE INTERACTIONS
+This landing page is for attendees arriving with an event link.
+- Reuse the existing /event?code=... event-code handling. The public home and event landing should share the new composition; do not leave /event on the old UI.
+- For a signed-out event attendee, Copy prompt must copy the actual assistant instruction with the actual validated code from the URL, as eventPage currently does:
+  Read <API>/skill.md and make me a ZKAds card. Event code: <actual code>
+  Resolve API from the existing configuration. Do not literally copy placeholders or invent/hardcode a conference code.
+- Preserve the existing signed-in member path: members authenticate their assistant to their own account instead of creating a new guest account from the crowd code. Do not regress that behavior while redesigning the event page.
+- Do not silently start a rendering job on copy. Show a short transient Copied state/toast only after clipboard success; provide a usable failure state if clipboard access fails.
+- Build the prompt once from the current event/account context and use the SAME resolved string for Copy prompt and read prompt. The reader must not show an invented preview or a different instruction from the one copied.
+- Example is an in-page link/scroll to an example section with a stable id. On mobile, smoothly scroll to the Slop Cannon heading, with suitable scroll-margin; respect prefers-reduced-motion. Keep it on the same page and preserve event/session context. Ensure keyboard users land at a meaningful heading.
+- If the visitor lacks a usable event code, do not generate a bogus copied prompt or paid job; retain an actionable invalid-link state. No manual invite-code field in the normal valid-event flow.
+- The example is a deterministic fictional demo. Do not call a paid model just to load the homepage.
+- 360° preview must use the generated Slop Cannon orbit with a poster, playsinline, and user-controlled sound. Do not substitute a CSS-spinning flat image and call it a real orbit. A poster is the loading/error fallback, not completion of the requested video.
+- Why this exists opens the example's personal story at the relevant reason page, using the same story component/navigation as a real card where practical.
+
+ABOUT — NAVIGATION, CONTENT AND CONTACT
+Add a real public /about route. The circled question-mark icon sits in the top-right corner, immediately to the RIGHT of the passkey login/save control, on mobile and desktop. Give it the accessible name "About ZK Ads", a visible keyboard focus state and a minimum 44px hit target. It navigates to the page rather than opening a tooltip. Keep it available when the account control changes to My cards. This global About icon does not replace the per-icon software-help popovers.
+Use the same header, ivory background, black type, thin rules, serif headings and acid-yellow action style. On About, show a Back link that returns to the originating homepage/event context without dropping a valid event code. Keep claim secrets out of links. Direct navigation/refresh at /about must work and require no authentication. An About visit must not create an account or render a card.
+
+Latest compact page layout (supersedes the earlier About concept):
+- Small eyebrow: ABOUT. Use it as the semantic page heading, styled as the small label; do not add another large title.
+- Remove the entire personal-introduction hero block: no "Personal technology. Shared upside." title, no "I'm Charlie Thompson..." biography and no introductory contact row. Retain the global app navigation with logo, login/save and About icon.
+- Remove the large "About ZK Ads" heading entirely. Start the left column directly with the concise main-project summary below. Use the space freed by removing the title and preview to make body text and the overlap helper noticeably larger, with comfortable line height. Do not leave an empty title-sized gap. Do not keep a separate "At Frontiers" heading or its explanation paragraph.
+- Show the NEW original Frontiers badge prominently. On desktop place it in the right column beside the project summary and overlap controls; on mobile use one natural scroll with the badge after the summary. Keep the whole badge visible with its original aspect ratio, including Paradigm, Charlie Thompson, @doctor-gonzo and Frontiers. Use design/charlie-frontiers-badge-v2.png with object-fit: contain, not an AI-redrawn badge or a screenshot of this mockup. Suggested alt text: "Charlie Thompson's Paradigm Frontiers badge, with the handle @doctor-gonzo and colorful abstract artwork."
+- Directly beneath the badge, keep an underlined "charliethompson.lol ↗" link, followed by "LinkedIn ↗" and "Twitter ↗" side by side on a second row. All three links remain visible while Contact is collapsed. Allow sensible wrapping on small screens. No extra name/year caption is needed.
+- Heading: "Where do we overlap?"
+- Helper: "Paste this into your AI assistant to find connections between your work and mine."
+- Remove the inline prompt preview/excerpt and its container entirely. Keep the full prompt available through the copy/read actions; no preview text or empty bordered block should occupy the page.
+- A yellow "Copy intro prompt" button and a quieter "read prompt" action opening the full selectable prompt. These actions use the same full text, with clipboard success/failure states. Reuse the accessible prompt-reader window, with a distinct title such as "Find our overlap" so it is not confused with the card-generation prompt.
+- Move the former "Let's build together" content into one collapsible section titled exactly "Contact", CLOSED by default, below the overlap controls. Use a simple summary row with thin horizontal rules and a chevron, rather than a prominent card. A native details/summary element is suitable; retain keyboard operation, visible focus and the correct expanded/collapsed state.
+- When Contact is expanded, show this invitation: "I'm open to collaborators and investors. If our work or interests overlap, feel free to reach out." The website and social links are already available beneath the badge and need not be duplicated here. When collapsed, hide the invitation content. Do not show "Let's build together" as another title or repeat its body outside the disclosure.
+
+Verified contact links (from Charlie's public website, checked 13 October 2026):
+- Website: https://charliethompson.lol/
+- LinkedIn: https://www.linkedin.com/in/charlie-thompson-2a8293aa/
+- Twitter: https://x.com/charlie______t (six underscores between "charlie" and "t", as linked from the personal website).
+Use real anchors; if opening a new tab, set rel="noopener noreferrer". Do not invent a LinkedIn slug, contact address, investment terms, endorsement or affiliation. No contact form or automated outreach is needed.
+
+Main-project summary for the About page:
+"ZK Ads is a privacy-focused advertising system in development. It is designed to make ads relevant without giving advertisers the underlying personal data."
+"Its design combines a user-controlled vault, zero-knowledge proofs and confidential matching. The broader plan shares value with readers and publishers through rewards or access to content."
+
+Factual boundaries for the implementation copy:
+- The main project is /Users/charlie/Desktop/xoCortex/projects/zk-ads, distinct from this /paradigm-frontiers/zkads conference app. Read its README.md, spec.md, docs/architecture.md and TODO/PRDs/099_product-economic-contract-and-protocol-versioning.md for context; spec.md reports production_ready=false. Preserve this distinction in plain language without filling the public page with repository paths or internal details.
+- Zero-knowledge proofs, confidential matching and reader rewards describe the main project's design/target. Do not claim a production ad network, live payouts, guaranteed anonymity, a completed audit, or that the current demo itself proves all ad matching in zero knowledge.
+- Real reader rewards/content access are a planned product direction; local sandbox credits are non-redeemable fixtures. Avoid specific reward rates or claims that visitors can earn cash today.
+- Charlie's public website supports the work/interests in the copyable intro prompt below. Keep that profile in the prompt; do not restore the removed biography header on the visible About page.
+
+EXACT COPYABLE INTRO PROMPT
+Store this independently from the event/card-generation prompt. It is public, self-contained text for the visitor to paste into their own assistant. Include the full profile and instructions below, rather than copying only a URL or asking the visitor to publish a chat export.
+
+--- BEGIN INTRO PROMPT ---
+Help me find useful overlap between my work and interests and Charlie Thompson's. Use what I have shared in this conversation and any memory I have enabled. If you do not have enough context about me, ask up to three short questions first. Do not pretend to know my background, search private sources I have not authorized, or infer sensitive personal traits.
+
+Charlie's public profile:
+- Charlie builds tools around privacy, programmable cryptography, coordination and human/AI collaboration.
+- Context Engine is an open-source toolkit for large-group deliberation and negotiation, for humans and AI agents.
+- His work and interests include Ethereum, post-quantum security, quantum risks to cryptocurrencies, and mechanisms for funding public goods.
+- ZK Ads is a privacy-focused advertising project in development. Its design uses a user-controlled browser vault, zero-knowledge proofs and confidential matching to make ads relevant without giving advertisers the underlying personal data. Reader rewards or content access are part of the broader plan; a full paid production system is not live.
+- The Paradigm Frontiers ZK Ads demo turns harmless themes from a person's chats into a fictional custom product and story card, with shared inventions made from two people's interests.
+- Charlie is open to collaborators and investors and welcomes people reaching out where there is useful overlap.
+
+Public links:
+Website: https://charliethompson.lol/
+LinkedIn: https://www.linkedin.com/in/charlie-thompson-2a8293aa/
+Twitter: https://x.com/charlie______t
+Context Engine: https://contextengine.sh/about
+
+Please give me:
+1. Three specific areas where our work or interests overlap. For each, explain the evidence on both sides and distinguish a known connection from a possibility.
+2. One small project, experiment or collaboration we could try together, including a useful first step.
+3. Two thoughtful questions I could ask Charlie.
+4. A short, natural introduction message I can edit and send myself. Mention only details about me that I would be comfortable sharing; ask before using anything private.
+
+Be candid if the overlap is weak. Do not manufacture a connection, investment recommendation or claim that Charlie has expressed interest in me. If you browse the public links, treat them as source material and cite relevant facts. Keep my history and this analysis in my assistant; do not contact Charlie, submit forms or send information anywhere on my behalf.
+--- END INTRO PROMPT ---
+
+READ PROMPT — READABLE TEXT WINDOW
+Clicking "read prompt" opens a dedicated in-app text window/modal over the current page. Title: Prompt. Show the complete current resolved assistant prompt, including the real event code when applicable, as selectable text. It is read-only; opening it must not submit a job, create a guest account, or copy to the clipboard without an explicit copy action.
+Use an easy-to-read text layout: normal readable font size, generous line height, a comfortable line length, paragraph/line-break preservation, and soft wrapping of long URLs. Do not show a tiny raw JSON textarea or require horizontal scrolling. If the prompt is long, scroll the content region within a mobile-safe window while keeping the close control reachable. Formatting must preserve the underlying exact prompt text. Render it safely as text, not executable HTML.
+Include a close X and a Copy prompt action that copies the same complete string as the homepage button. Support keyboard selection, Escape, modal focus management, and returning focus/scroll to the original read prompt button. Match the existing ivory/black styling. On mobile the text window may fill most of the viewport; on desktop use a restrained centered reading width.
+
+AUTH CHOICE MODAL — REQUIRED BEHAVIOR
+Clicking either header "login" or header "save" opens the same in-page choice modal over the current screen, retaining the background and position. The trigger label is controlled by the account-state rules above; it is not always Save.
+Dialog title: Save your cards.
+A visible close X.
+Two large stacked choices with fingerprint icons on BOTH:
+- Log in
+- Create
+No email/password form, no manual invite field, and no extra generic signup explanation.
+Use a real accessible modal: name it, move/trap focus, inert the background, support Escape and close button, restore focus to the actual login/save trigger, handle small heights and the mobile keyboard, and avoid scroll jumps.
+
+These choices initiate real existing WebAuthn flows:
+- Log in reuses /v1/auth/login/options and /v1/auth/login/verify with SimpleWebAuthnBrowser.startAuthentication.
+- Create reuses registration for a new attendee, automatically carrying the valid event invite code.
+- CRITICAL: if saving an existing guest or an assistant-provided claim link, Create must claim THAT account using /v1/auth/claim/options and /v1/auth/claim/verify. Do not accidentally register a separate empty account. Preserve the existing secret claim-link handling and removal from the address bar.
+- Preserve existing account-switch/conflicting-claim protections. Logging in to an existing member account must not silently discard a guest, merge unrelated accounts, or imply that guest cards were transferred.
+- Trigger the native passkey ceremony from the explicit chosen button; do not fabricate a browser/OS fingerprint prompt.
+- Handle cancellation, errors, expired codes and repeat clicks without losing return context. Do not mark the user Saved until server verification succeeds.
+- After success, return to the same card/story or the member's actual collection. An already authenticated member should have an appropriate account/My cards control rather than a redundant new-account choice.
+Authentication belongs to the application shell, not inside sandboxed generated card documents.
+
+QUESTION-MARK SOFTWARE HELP
+Add a small visible question-mark help button BESIDE each process/status icon on the loading screen and each software/technology icon used elsewhere, including passkey and media icons. Do not bury the explanation behind a hover-only tooltip. Users must be able to click or tap the question mark to see which software is responsible for that action or stage (Phala, Venice, browser passkeys, etc.). Keep the help control separate from the action icon so opening help does not trigger authentication, copy, playback, or generation.
+Use a compact accessible popover with the software/provider name first and one or two plain-language sentences explaining its role. Make it keyboard-operable, labelled (for example, "Software used for drawing the product"), dismissible with Escape or outside click, and positioned within the viewport. Support touch and adequately sized hit targets even when the visible question-mark glyph is small. Keep the rest of the minimal layout intact.
+Use actual route/configuration/job metadata to choose the explanation. These are role mappings from the existing code, not permission to claim every provider is involved in every run:
+- Queue/orchestration: ZKAds render service; production rendering runs in a Phala TEE. Explain local/fixture mode as local when that is the actual mode.
+- Profile/concept: the person's own assistant for a supplied concept; Phala Confidential AI for the existing sealed-summary/fusion path; Venice text generation for the existing catalogue route where configured. Show the path actually used, not all three as if they ran together.
+- Image: Venice, with the actual configured image model when the application has that information.
+- 360-degree orbit: Venice, with the actual configured video model when available.
+- Sound: Venice's orbit-model soundtrack by default, or the separately selected Venice music model. Do not imply a separate music job occurred when audio came from the video job.
+- Page/story assembly: ZKAds templates, headless Chrome and ffmpeg; hosted inside the Phala render environment in production.
+- Hosting/media delivery, wherever represented by an icon: Cloudflare Workers and R2, matching the actual application configuration.
+- Fingerprint/passkey: WebAuthn via SimpleWebAuthn and the device/browser passkey provider. The icon represents passkey authentication; the device may use a fingerprint, face or PIN. Do not suggest biometric data is sent to ZKAds.
+- Copy icon: the browser Clipboard API; copying sends nothing to a model by itself.
+- Media controls: the browser's video/audio player, with generated media sourced through Venice when that is true for the displayed card. Fixtures must be identified as example/local media.
+For other icon actions, explain their actual responsible software rather than attaching a guessed vendor. Ordinary in-page navigation is handled by the ZKAds frontend/browser. Never expose keys, bearer tokens, private summaries or claim secrets in help text. Provider information is explanatory, not an attestation/verified-security badge. Do not hardcode model names that can drift from configuration; use metadata if available and a truthful provider-level description otherwise.
+
+COMPLETE MOBILE JOURNEY
+The storyboard is a set of states, not a mandatory linear signup wizard. Saving is optional before creation; the existing backend decides which later operations require membership.
+1. Arrive from the event link. See the three bullets, Copy prompt, read prompt below it, the mobile-only Example anchor, and the fictional Slop Cannon. The header says login until a real guest account entry exists; then it says save.
+2. Optionally open the login/save choice modal, then choose Log in or Create and complete the real passkey ceremony.
+3. Optionally read the full prompt in its text window, then copy it, paste it into the user's own assistant, and follow the card link the assistant returns. Reading or copying alone does not start a job or create a guest account.
+4. Show rendering state from real API status: queued, concept when applicable, image, orbit, music, page. Highlight the current stage, no fabricated percentage. Preserve failed, waiting_summary, network-error and resumed-job behavior. The headline must read exactly "Something custom is taking shape". Add clickable question-mark software help beside each processing icon. Keep the existing approximate 2–6 minute note as an estimate.
+5. Reveal the product orbit (the front). Have 360°/sound controls, Share, and Flip to your story.
+6. You page: archetype, short reading, one stat, deepest rabbit hole, era match. Optional data/pages should remain optional.
+7. Why page: reasons linking the user's harmless interests to product features.
+8. Catalogue: additional concept items with Make this one actions wired to the existing owner-only catalogue route.
+9. Fuse: invite a friend or find a match, then use existing invite/accept/summary/render flows. Do not turn a click into automatic consent from another person.
+10. An actual invite gets its real server-generated link and QR code, copy/share actions and expiry. The recipient can authenticate as required, provide their own approved summary through the existing enclave path, and explicitly accept/start. Show waiting/render/failed states and the resulting shared card using the same viewer. The existing collection should retain personal and shared cards.
+
+The card story order is Object → You → Why → Catalogue → Fuse. Show dynamic counters based on the pages actually present; do not hardcode five pages for every real concept. Support previous/next controls, keyboard navigation, and touch without intercepting vertical page scrolling. Keep controls outside tap-to-advance hit areas. Honour reduced motion for flips; sound starts off until the user chooses it. Keep native share and download behavior.
+
+FICTIONAL DEMO STORY COPY
+This is proposed sample content for the Slop Cannon only, never hardcode it as facts about real users. Refine it during the concept review while preserving the respectful, custom, coding-process direction.
+You:
+- The iterative inventor.
+- You use quick prototypes to ask better questions, then test what deserves to ship.
+- 1/1 / built around one fictional maker
+- Deepest rabbit hole: The edge case that turns a quick fix into a better design.
+- In 2086: Keeper of the prototype workshop.
+Why:
+- You learn by building. → Swappable cartridges turn a question into something you can try.
+- You test your assumptions. → Green test lights show which experiments are ready for another round.
+- You care how the pieces fit. → A custom aiming dial keeps each prototype pointed toward the larger idea.
+Catalogue:
+- The Edge-Case Lantern — Illuminates the one route your happy-path demo never took.
+- The Refactor Loom — Weaves the experiments that worked into something you can build on.
+Fusion:
+- Two ways of thinking. One custom invention.
+- Invite a friend. Make a shared 1/1.
+- Invite a friend; Find a match; Back to the object.
+Keep the example visibly labelled fictional. Actual cards must use their existing concept data and ownership permissions.
+
+EXISTING IMPLEMENTATION TO REUSE
+- app/app.js: welcome(), eventPage(), renderNav(), fingerprint(), signin()/signInButton(), joinPanel(), claim()/savePanel(), cardView()/readyCard(), catalogue(), invite(), fuse(), match().
+- app/style.css and app/index.html: responsive shell, logo, existing CSP and script setup.
+- app/config.js: existing API/enclave configuration.
+- lib/share.mjs: storyPages(), pageHtml(), sharePageHtml(), common card/story HTML and exported-video rendering.
+- worker/index.mjs and worker/registry.mjs: existing routes, invites, sessions, cards, auth; avoid unnecessary API changes.
+- skill/SKILL.md: existing assistant interaction contract; keep compatibility.
+- tests/hosted.e2e.mjs: event guest, claim, passkey, story sandbox and full browser coverage.
+- tests/share.test.mjs and the remaining test suite.
+
+Keep the current plain DOM, no-build-step app. No new frontend framework, auth provider or dependency unless demonstrably necessary. Do not weaken CSP, opaque-origin card sandboxing, safe URL checks, escaping, ownership checks, one-time claim semantics, or summary-to-enclave boundaries. Generated card pages must not gain app session storage access. Preserve optional usage badges and sponsored catalogue slots even if the simplified example does not display them. Do not add false ZK/TEE/zkTLS verification badges; zkTLS has its existing narrow usage-proof meaning.
+
+If styling the shared story templates changes their exported video frames, verify the HTML and export paths together. Keep data and text escaped. Don't globally force Slop Cannon copy or artwork onto other users' products.
+
+IMPLEMENTATION ORDER
+1. Inspect the current tree and references; identify the existing media and actual event routes.
+2. Review/refine the Slop Cannon concept and save its valid concept JSON. Generate and inspect the actual cannon hero and orbit; continue independent UI work while generation runs.
+3. Implement the responsive landing page, original logo, Copy prompt, read prompt text window and mobile-only Example behavior.
+4. Implement account-aware login/save labels and the accessible choice modal on top of the existing login/register/claim flows.
+5. Apply the visual system and new headline to rendering/reveal/story, add clickable software-help popovers, and wire the real cannon media/story plus existing catalogue/fusion routes. Implement the public About route, header question-mark link, original badge, verified contact links, main-project summary and intro-prompt copy/read behavior.
+6. Add targeted regression coverage for the new behavior, visually verify real mobile and desktop pages, update affected README/docs, and commit coherent changes under the repository's conventions.
+7. Publish through the existing deployment workflow and verify the live example and its public media URLs.
+Follow any applicable independent-review requirements from AGENTS.md. Keep changes confined to the agreed UX and example.
+
+VERIFICATION AND ACCEPTANCE
+Use Node >=22.12 with the local nvm setup. Run:
+- npm test
+- npm run test:e2e
+The existing e2e suite uses synthetic fixture media with Chrome, ffmpeg and Wrangler; it should not buy Venice renders. If dependencies are missing or tests skip, report that explicitly rather than claiming they passed.
+For a manual dev session, use npm run dev -- --fixture <the selected cannon run directory>, opening http://localhost:8787 for passkeys. Generate the requested example once, then reuse its media for development and verification instead of buying a render on each test run.
+
+Test meaningful behaviors:
+- Mobile at 375, 390 and 430px: three exact bullets, side-by-side Copy prompt/Example, working anchor scroll, no horizontal overflow, bottom controls reachable.
+- Desktop at 1440px: two-column composition, no Example button in layout/tab order, working Copy prompt.
+- Correct event code copied; signed-in member behavior preserved; clipboard failure handled.
+- read prompt appears below the primary action on both layouts, opens a readable text window, and shows/copies exactly the resolved homepage prompt; long text and URLs wrap without overflow. Opening it does not start a job or create an account.
+- Header says exactly login for a visitor without a guest account, exactly save for a real active guest/valid claim context, and preserves member navigation after authentication. An event URL or clipboard action alone must not change login into save; stale guest state is handled.
+- Auth-choice and prompt-reader modal focus/Escape/close/return behavior; both Log in and Create choices retain fingerprint icons.
+- Log in, new-account Create, guest-claim Create, cancellation, invalid/used claim, account mismatch, and no loss of guest cards.
+- Real status polling; exact headline Something custom is taking shape; failure/retry display; ready card and story navigation; missing optional page data.
+- Question-mark help works with touch and keyboard, identifies the correct software for the actual run/mode, stays within the viewport, and does not accidentally activate adjacent action controls. Local fixtures are not presented as verified Phala/Venice runs.
+- Sample story marked fictional; catalogue/fusion use real permissions and consent.
+- Actual cannon hero, poster and orbit load on mobile and desktop; preview plays and loops; sound requires a user action; reduced-motion and video-error fallbacks work. No unrelated fixture appears as cannon media, and no insulting legacy copy remains in the active example.
+- A signed-out visitor can view the live example/story without creating a guest entry or triggering generation. Deployment serves the actual media with correct content types and working video range requests where required.
+- The global question-mark link is to the right of the account control at all supported widths and opens /about; direct loads and Back preserve safe event context. It remains distinct from software-help popovers.
+- About uses the latest complete badge (v2), verified website/LinkedIn/Twitter links and concise in-development main-project summary. The personal-introduction hero, large About ZK Ads title, inline prompt preview and At Frontiers section are absent. Body text is larger as shown in About v3; mobile text and badge do not overflow or become illegible.
+- Contact starts collapsed, expands by click/tap and keyboard, and shows the invitation only when open. Hidden content cannot receive focus. Website, LinkedIn and Twitter remain visible and usable beneath the badge regardless of the Contact state.
+- Copy intro prompt and its reader use exactly the same complete profile/instructions, including public URLs. They do not copy the event/card prompt, create accounts, contact Charlie or transmit the visitor's history.
+- Existing generated-page sandbox/security tests stay passing.
+Take actual browser screenshots at mobile and desktop widths and compare them to the supplied images. Do not claim a screenshot-only mockup is a finished working implementation.
+
+DONE WHEN
+The design is implemented in the existing app, the concept has been reviewed, the actual emoji-like cannon hero and orbit have been generated and connected, the primary interactions work, targeted tests and visual checks have passed (or concrete blockers are reported), and affected docs are current. The public example and media have been verified after deployment. Report the concept refinements, changed files, commit(s), generation models/costs if available, checks, screenshots and live URL. Clearly distinguish local completion from anything blocked from publication; do not claim missing or unverified media is done.

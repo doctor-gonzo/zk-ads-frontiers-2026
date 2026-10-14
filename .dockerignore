@@ -1,0 +1,6 @@
+# The image is public, so admit only what the render service needs.
+*
+!package.json
+!package-lock.json
+!lib/
+!enclave/server.mjs

@@ -1,0 +1,37 @@
+{
+  "name": "paradigm-frontiers-zkads",
+  "version": "1.0.0",
+  "private": true,
+  "license": "FSL-1.1-MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "make": "node zkads.mjs make",
+    "zkads": "node zkads.mjs",
+    "quote": "node zkads.mjs quote",
+    "test": "node --test tests/*.test.mjs",
+    "test:e2e": "node --test --test-concurrency=1 tests/hosted.e2e.mjs tests/enclave.e2e.mjs",
+    "worker": "node scripts/wrangler.mjs dev --ip 127.0.0.1 --port 8787",
+    "enclave": "node --env-file-if-exists=.env enclave/server.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "renderer:venice": "node scripts/venice-renderer.mjs",
+    "dev": "node scripts/dev.mjs",
+    "vendor": "cp node_modules/@simplewebauthn/browser/dist/bundle/index.umd.min.js app/vendor/simplewebauthn-browser.js && cp node_modules/uqr/dist/index.mjs app/vendor/uqr.mjs"
+  },
+  "devDependencies": {
+    "@simplewebauthn/browser": "14.0.0",
+    "playwright-core": "1.62.1",
+    "uqr": "0.1.3",
+    "wrangler": "4.149.0"
+  },
+  "dependencies": {
+    "@phala/dstack-sdk": "0.5.8",
+    "@reclaimprotocol/js-sdk": "5.8.2",
+    "@simplewebauthn/server": "14.0.3"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

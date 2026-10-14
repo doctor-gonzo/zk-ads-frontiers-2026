@@ -1,0 +1,30 @@
+Generation mode: built-in image_gen
+Reference: frontiers-2026-slop-mobile-v5.png
+Scope: UX mockup and implementation reference, not implemented behavior.
+
+Use case: ui-mockup
+Asset type: Mobile UX storyboard, part 1 of 2, ZKAds entry through product reveal.
+Input image 1: final approved mobile homepage and source of the EXACT angular logo, typography, minimal ivory/black/lime palette and red Slop Cannon. Preserve that design system throughout.
+Format: one high-resolution landscape board with FOUR complete, evenly spaced mobile viewport screens side by side, about 390:844 proportions each. Flat screenshots, no phone hardware, no perspective. Light neutral board background, thin understated screen edges. The board header is small "ZKAds / Mobile flow 01". Small board-only captions above screens are "1 · START", "2 · SAVE", "3 · RENDER", "4 · REVEAL". These are states, not four screens shown simultaneously in the real app. Prioritize crisp readable text.
+Shared visual style: exact supplied angular black logo, warm ivory screen backgrounds, elegant black editorial serif headings, neutral sans body, sparse monospace labels, thin rules, almost-square buttons, yellow-green only for primary actions. No grain, glitch, dark UI, thick decorative frames or gradients.
+
+SCREEN 1 / START: The top mobile viewport of the approved homepage, compact enough to show the explanation and actions. Header angular logo at left and fingerprint "Save" at right. Heading "For an audience of one." EXACT THREE bullets:
+"Your agent compiles a profile based on your history (no sensitive data)"
+"Sends this data to a TEE to create a 1/1 product tailored to you (rendered by Venice)"
+"You can merge your history with someone else’s for a shared product"
+Below the bullets two adjacent buttons: yellow-green "Copy prompt" with copy icon and outlined "Example" with down chevron. A thin divider, small "EXAMPLE", heading "The Slop Cannon", and a modest preview of the red cannon lower down. NO signup or privacy footer. This screen may naturally show only the beginning of the example because it represents a real mobile viewport, unlike the supplied full-page capture.
+
+SCREEN 2 / SAVE: The same homepage behind a subtle dimmed overlay, with a clean ivory centered MODAL. This is the focus of this screen. Dialog title "Save your cards", small close X at top right. Two large stacked button rows, each with a clearly drawn fingerprint icon on the left. First outlined button label EXACTLY "Log in"; second yellow-green button label EXACTLY "Create". No email field, no password, no invite field, no additional buttons, no explanatory paragraph or signup subtext. It must be visually unmistakable that this modal opens on top of the home page; not a separate route, not an operating-system prompt.
+
+SCREEN 3 / RENDER: Header logo and fingerprint "Save". Small eyebrow "MAKING YOUR CARD". Refined serif heading "Something ridiculous is taking shape." A tiny simple red cannon silhouette, generous whitespace, then a short vertical progress list:
+"In the queue" with done check,
+"Drawing the product" with done check,
+"Filming the 360° orbit" highlighted with a small lime active dot,
+"Adding the sound" in muted text,
+"Setting the pages" in muted text.
+One small calm line "Usually 2–6 minutes. Come back any time."
+This is actual job progress viewed after the assistant returns a card link; no fake percentage, no countdown, no auto-generated claims. No big action button while a job is running.
+
+SCREEN 4 / REVEAL: Header logo and fingerprint Save. A slim story counter "01 / 05" and five little line segments. Title "The Slop Cannon". Subcopy "Industrial-grade output. Now with 40% more “delve”." Large gorgeous SAME red cannon on clean ivory, glass hopper of lavender/cream goo, paper reading "Absolutely!". Tiny utility row "360°" / "Sound off". Primary yellow-green "Flip to your story →" button, meaning advance to the personal story. Under it a quiet "Share" action. Tiny "Fictional example" label. The playful object dominates the reveal.
+
+Requirements: consistent proportions and style across all four screens. All copy legible and exact, no unrequested extra paragraphs. Keep Save modal choices exactly Log in and Create, BOTH with fingerprint icons. No generated QR codes. No promises that Copy prompt alone starts a render. No wallets, coins, verified badges, or chat-history upload boxes.

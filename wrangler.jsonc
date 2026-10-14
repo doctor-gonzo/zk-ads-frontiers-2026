@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zkads",
+  "main": "worker/index.mjs",
+  // The site's address comes from ZKADS_PUBLIC_URL when deploying
+  // (scripts/deploy.mjs attaches it and its www. as custom domains, so local
+  // development keeps its own host); the workers.dev address keeps answering
+  // too, so links made before still work.
+  "workers_dev": true,
+  "compatibility_date": "2026-10-01",
+  // skill/SKILL.md is bundled as text and served at /skill.md.
+  "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
+  // The web app (app/) is served as static files; the worker answers the API,
+  // card pages, the landing page's example (from R2, for byte ranges) and
+  // skill.md first.
+  "assets": { "directory": "./app", "not_found_handling": "single-page-application", "run_worker_first": ["/v1/*", "/c/*", "/example", "/example/*", "/internal/*", "/skill.md", "/SKILL.md"] },
+  "durable_objects": { "bindings": [{ "name": "REGISTRY", "class_name": "Registry" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Registry"] }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "zkads-media" }],
+  // Per-IP cap on token-free reads that reach the registry (card status, pages
+  // not made yet). A venue shares one IP, so it is generous.
+  "ratelimits": [{ "name": "READS", "namespace_id": "4201", "simple": { "limit": 1200, "period": 60 } }],
+  // Secrets (wrangler secret put, or .dev.vars locally): ADMIN_TOKEN, ENCLAVE_SECRET.
+  // PUBLIC_URL defaults to the request's own origin. APP_ORIGIN must be set
+  // outside local development (locally it defaults to the request's origin);
+  // RP_ID (the passkeys' domain) defaults to APP_ORIGIN's host. Passkeys need a
+  // domain name, so open the local site at http://localhost:8787, not 127.0.0.1.
+  "vars": { "PUBLIC_URL": "", "APP_ORIGIN": "", "RP_ID": "", "ENCLAVE_URL": "http://127.0.0.1:8788", "CARDS_PER_DAY": "300", "RATE_LIMIT_SCALE": "1", "FOLLOW_UP_DELAY_MS": "120000" },
+  // Sends follow-up renders that could not reach the renderer when first due.
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "observability": { "enabled": false }
+}

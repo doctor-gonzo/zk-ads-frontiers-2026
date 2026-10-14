@@ -1,0 +1,33 @@
+Use case: ui-mockup
+Asset type: high-fidelity desktop About page concept for the existing ZK Ads web app, a single complete page screenshot, approximately 1600px wide by 1500px tall. No browser chrome or device frame.
+Inputs: Image 1 is the actual Charlie Thompson Paradigm Frontiers badge and must be displayed as the intact supplied artwork, preserving its portrait proportions, colorful image and text. Image 2 is the original angular black ZKAds logo to use in the header with surrounding empty margins removed. Image 3 is a style reference for typography, ivory background, fine rules and acid-yellow buttons only; do not use its cannon, product copy, or old Save label.
+Primary request: Imagine a sophisticated, restrained About page in the same visual system. Warm ivory #F5F4EE background, near-black typography, editorial high-contrast serif headings, extremely readable sans-serif body, sparse monospace labels, fine horizontal black rules, generous margins and no rounded dashboard cards. Accent #DFFF38 only for primary button. No background grain or gradients. The badge supplies the vivid color.
+Header: actual angular ZKAds logo at top left. At top right an outlined button with fingerprint icon and lowercase text "login"; immediately to its RIGHT a small separate circled question-mark icon. Keep these as clearly separate clickable controls. Thin rule beneath header. Below it small "← Back" link and "ABOUT" eyebrow.
+Desktop layout: main upper content is two columns, broad left column with introduction and project explanation, narrower right column showing the original full badge large enough to read, with a small caption "CHARLIE THOMPSON / FRONTIERS 2026". Keep whole badge visible and unstretched, no tilted mock physical card, no invented portrait. A small elegant link row under introduction has "charliethompson.lol ↗" and "LinkedIn ↗".
+Exact visible content in left column:
+Large serif heading, two lines:
+"Personal technology."
+"Shared upside."
+Intro:
+"I'm Charlie Thompson. I build tools for privacy, coordination and better ways to work with AI."
+Section heading:
+"The bigger idea behind ZK Ads"
+Body, in short readable paragraphs:
+"ZK Ads is a privacy-focused advertising system in development. The aim is to make ads relevant while giving people control over the information used to select them."
+"Its design combines a user-controlled browser vault, zero-knowledge proofs and confidential matching, so advertisers can check that an offer fits without receiving the underlying personal data."
+"The broader plan is to share value with readers and publishers through rewards or access to content. The full paid system is still being built."
+Small subheading:
+"At Frontiers"
+Body:
+"This demo turns harmless themes from your chats into a fictional product made just for you. Your own assistant imagines it; ZK Ads renders the story. Combine interests with a friend to make a shared invention."
+Below main two-column area a thin rule, then a two-column lower section with no heavy card containers:
+Left heading "Let's build together."
+Left body "I'm open to collaborators and investors. If our work or interests overlap, feel free to reach out."
+Repeat subtle links "Website ↗" and "LinkedIn ↗".
+Right heading "Where do we overlap?"
+Right body "Paste this into your AI assistant to find connections between your work and mine."
+A short selectable-looking prompt preview in a quiet thin-rule block:
+"Help me find useful overlap between my work and interests and Charlie Thompson's..."
+Large flat acid-yellow action "Copy intro prompt" with copy icon.
+Directly below a smaller understated button "read prompt".
+All text is real readable UI typography. Preserve exact labels and wording, no pseudo-text. Elegant alignment, generous negative space. Do not include technical implementation details, fake security badges, fundraising amounts, additional nav items or extra controls. All content must fit naturally on the whole-page image, not clipped.

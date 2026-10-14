@@ -1,0 +1,30 @@
+# Phala Cloud (dstack) app: the ZKAds render service in a TEE. The values in
+# ${...} are Phala's encrypted environment variables; pin the image by digest
+# so the attested app is exactly the published build.
+services:
+  zkads:
+    image: ghcr.io/doctor-gonzo/zk-ads-frontiers-2026@sha256:75916217d5a6bbe52a24f4f531fb1eeeb69d90d55834a581d8abd7af37443bb7
+    restart: always
+    environment:
+      ENCLAVE_SECRET: ${ENCLAVE_SECRET}
+      WORKER_URL: ${WORKER_URL}
+      VENICE_API_KEY: ${VENICE_API_KEY}
+      CONFIDENTIAL_AI_KEY: ${CONFIDENTIAL_AI_KEY}
+      RECLAIM_APP_ID: ${RECLAIM_APP_ID}
+      RECLAIM_APP_SECRET: ${RECLAIM_APP_SECRET}
+      # Written into this file (not secret), so the attested compose hash pins
+      # what counts as a proved Codex badge.
+      RECLAIM_PROVIDER_ID: "PROVIDER-ID"
+      RECLAIM_PROVIDER_VERSION: "PROVIDER-VERSION"
+      RECLAIM_TOKENS_PARAM: "tokens"
+      RECLAIM_REQUIRE_TEE: "1"
+      # "video": the orbit video's own soundtrack; "music": a separate music model.
+      SOUND: "video"
+    ports:
+      - "8788:8788"
+    volumes:
+      # The dstack guest agent: its presence is how the service knows it runs in a TEE.
+      - /var/run/dstack.sock:/var/run/dstack.sock
+      - zkads-data:/data
+volumes:
+  zkads-data:

@@ -1,0 +1,11 @@
+Generation mode: built-in image_gen
+Reference: frontiers-2026-slop-desktop-v5.png
+Final desktop rule: Example is mobile-only and absent on desktop.
+
+Use case: precise-object-edit
+Asset type: Final desktop ZKAds homepage correction.
+Input image 1 is the edit target. Keep EVERYTHING unchanged except the action row beneath the three bullets.
+REMOVE the outlined "Example" button and its down chevron entirely. Desktop does not need an Example button because the Slop Cannon example is already visible in the right column.
+Make the acid-yellow-green "Copy prompt" button expand to fill the previous action row's left-column width, retaining its exact label and copy icon, height, corner shape and existing vertical position.
+Preserve all other pixels and content as closely as possible: exact supplied angular ZKAds logo, fingerprint Save button, all three bullets, the "1/1 product tailored to you (rendered by Venice)" wording, the Slop Cannon, the joke "Now with 40% more “delve”.", typefaces, spacing, ivory palette, metrics, and the bottom preview and story links.
+One single wide desktop screenshot, same aspect ratio. No other redesign, no extra text, no modal, no new buttons.

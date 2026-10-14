@@ -1,0 +1,70 @@
+{
+  "created": "2026-10-13T20:20:31.712Z",
+  "input": {
+    "source": "concept file",
+    "name": null
+  },
+  "concept": {
+    "model": "your own assistant",
+    "source": "import"
+  },
+  "image": {
+    "model": "gpt-image-2-5-sunburst",
+    "privacy": "anonymized",
+    "resolution": "2K",
+    "quality": "high",
+    "usd": 0.15,
+    "seconds": 53,
+    "prompt": "A friendly cannon, like the cannon emoji turned into a polished 3D designer toy. A short, chunky, rounded barrel in glossy cherry-red enamel with soft bevels, its dark open muzzle tilted upward, rests on a compact, toy-like red carriage with two simple matte-black wheels. A small brass aiming dial with a pointer sits on the side of the carriage, and a neat row of three glowing green test lights runs along its top. Rising from the muzzle is one sculpted, frozen swirl of white paper ribbon, fixed in place as part of the sculpture, carrying a yellow rubber duck, two chunky black curly-brace shapes like toy blocks, and a tiny white prototype rocket with acid yellow-green fins, plus a few small paper scraps. A seamless warm-ivory studio sweep, a soft grounding shadow and flattering soft product light. Clean, tactile and cheerful: no smoke, fire, sludge or mess.\n\nComposition: 9:16 hero product shot. Exactly one object, centered and fully visible with generous margins, filling about half the frame height. Keep the top fifth and bottom fifth of the frame calm and empty. Absolutely no text, letters, numbers, logos, labels or watermarks. No people, hands or faces."
+  },
+  "video": {
+    "model": "minimax-h3-max-multi-angle",
+    "privacy": "private",
+    "status": "done",
+    "usd": 0.46,
+    "duration": "8s",
+    "resolution": "768P",
+    "hero_sha256": "74bfe71095b64bab9dca67aea4850daa317cc6f65988196ad0aa9148c354d839",
+    "camera_trajectory": [
+      {
+        "time": 0,
+        "azimuth": 0,
+        "elevation": 0,
+        "distance": 1
+      },
+      {
+        "time": 0.25,
+        "azimuth": 90,
+        "elevation": 0,
+        "distance": 1
+      },
+      {
+        "time": 0.5,
+        "azimuth": 180,
+        "elevation": 0,
+        "distance": 1
+      },
+      {
+        "time": 0.75,
+        "azimuth": 270,
+        "elevation": 0,
+        "distance": 1
+      },
+      {
+        "time": 1,
+        "azimuth": 360,
+        "elevation": 0,
+        "distance": 1
+      }
+    ],
+    "prompt": "A friendly red toy cannon seen from every side: a chunky, rounded, glossy barrel tilted up with a dark open muzzle, a compact red carriage, two matte-black wheels, a brass aiming dial on one side and three green test lights on top. A frozen white paper-ribbon swirl rises from the muzzle, holding a yellow rubber duck, two curly-brace shapes and a tiny rocket, all fixed in place. A seamless warm-ivory studio sweep all around.\n\nThe object stays perfectly still and centered while the camera makes one smooth, constant-speed 360-degree orbit around it and ends exactly where it began. Shape, materials, colors and lighting stay consistent from every angle. No text, no people, no morphing.\n\nSound: A playful, curious workshop groove: plucked marimba, soft brushed drums, upright bass and a light whistled hook, with gentle clockwork ticks. Warm and optimistic, about 100 BPM. Instrumental, no vocals. Instrumental only, with no speech or vocals.",
+    "sound": true,
+    "file": "orbit.mp4"
+  },
+  "orbit": {
+    "hero_sha256": "74bfe71095b64bab9dca67aea4850daa317cc6f65988196ad0aa9148c354d839",
+    "model": "minimax-h3-max-multi-angle",
+    "sound": true
+  },
+  "music": null
+}

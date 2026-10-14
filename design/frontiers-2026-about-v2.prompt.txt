@@ -1,0 +1,25 @@
+Use case: ui-mockup
+Asset type: revised desktop About page for ZK Ads, one complete high-fidelity page screenshot. This is a precise edit/recomposition of reference image 1, not a new visual style.
+Image 1: edit target, previous About page. Preserve its angular ZKAds logo, ivory background, crisp black typography, serif headings, thin rules and acid-yellow button treatment.
+Image 2: REPLACEMENT badge artwork. Replace the old badge completely with this exact new supplied badge: mostly pale ivory right half, red/cyan/green abstract left side, Paradigm at top, Charlie Thompson and @doctor-gonzo at center, Frontiers at bottom. Preserve the whole image, portrait aspect ratio and all lettering without cropping or stretching. Do not mix it with the old badge.
+User edits:
+- Remove the entire introductory hero block: no "Personal technology. Shared upside.", no "I'm Charlie Thompson..." biography, and no introductory contact-link row.
+- Remove the entire "At Frontiers" section including its paragraph.
+- Replace the always-visible "Let's build together." section with an accordion titled exactly "Contact". Show it CLOSED by default, as a simple row with a downward chevron on the right and fine top/bottom rules. Do not show the invitation or contact text beneath it in this collapsed mockup.
+- Keep the personal website as a simple unobtrusive link beneath the new badge.
+- Reduce text density and make the page substantially more compact.
+Layout:
+Preserve the GLOBAL APP navigation bar with angular ZKAds logo on left and fingerprint "login" button then separate circled ? icon to its right. This is app navigation, not the removed personal introduction. Fine rule below it. Small "← Back" and "ABOUT" beneath.
+Main desktop grid: broad left column, narrower right badge column, starting on the same baseline. A thin vertical divider separates them. No giant hero, no gap reserved for removed text.
+Left column title in a moderately sized editorial serif: "About ZK Ads".
+Use only this concise body text, in two readable paragraphs:
+"ZK Ads is a privacy-focused advertising system in development. It is designed to make ads relevant without giving advertisers the underlying personal data."
+"Its design combines a user-controlled vault, zero-knowledge proofs and confidential matching. The broader plan shares value with readers and publishers through rewards or access to content."
+Then a fine rule and modest serif heading "Where do we overlap?"
+Helper: "Paste this into your AI assistant to find connections between your work and mine."
+Keep a short prompt preview in a quiet thin-rule block:
+"Help me find useful overlap between my work and interests and Charlie Thompson's..."
+A flat acid-yellow full-column-width button "Copy intro prompt" with copy icon. Directly below, an understated "read prompt" button.
+At bottom of the left column, separated with whitespace, show the CLOSED "Contact" accordion row, with a down chevron at far right. Its invitation and LinkedIn link are hidden until expanded.
+Right column: show the new full original badge, prominent, with natural portrait proportions. Below it just the simple underlined "charliethompson.lol ↗" link. No extra name/year caption.
+Fit everything in one compact complete desktop page, approximately 1500 wide by 1000 tall. Use balanced margins, generous but not excessive breathing room, no browser frame, no UI annotations, no extra inset, no added copy. All typography must be clean and readable. Keep all removed elements absent.

@@ -1,0 +1,4 @@
+# Local secrets for `npm run worker` / `npm run dev` (scripts/dev.mjs writes
+# .dev.vars for you). In production, set them with `wrangler secret put`.
+ADMIN_TOKEN=
+ENCLAVE_SECRET=

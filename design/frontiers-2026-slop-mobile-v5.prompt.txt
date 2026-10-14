@@ -1,0 +1,26 @@
+Generation mode: built-in image_gen
+Reference: frontiers-2026-slop-mobile-v4.png
+Scope: UX mockup only. Example scrolls to the demo; Save opens the passkey choice modal.
+
+Use case: precise-object-edit
+Asset type: Final mobile homepage UX mockup, version 5.
+Input image 1: edit target, the approved ZKAds mobile homepage. Preserve the exact black angular logo, header fingerprint Save button, title, all three bullets, ivory palette, type scale, Slop Cannon artwork, copy, metrics, and preview/story links.
+
+Change ONLY the primary action row:
+Replace the single full-width "Copy prompt" button with TWO adjacent buttons on the same row, with a 10px-ish gap:
+- Left: about two thirds of available width, flat acid-yellow-green, label "Copy prompt" and small copy icon.
+- Right: about one third of available width, thin black outline on ivory, label "Example" with a small downward arrow.
+Both buttons have equal height, nearly square corners, comfortable touch targets. Keep the existing horizontal page margins. Ensure the labels fit and remain legible at mobile size.
+The Example button means scroll down to the Slop Cannon example on this same page; that behavior is context only, not extra text. Copy prompt still includes the event code in the copied assistant instruction; do not print a code.
+Save still means open a modal with "Log in" and "Create", both with fingerprint icons; do NOT show the modal on this particular screen.
+
+Do NOT otherwise redesign the page. Keep the three bullets VERBATIM:
+• Your agent compiles a profile based on your history (no sensitive data)
+• Sends this data to a TEE to create a 1/1 product tailored to you (rendered by Venice)
+• You can merge your history with someone else’s for a shared product
+
+Preserve the example joke EXACTLY:
+"Industrial-grade output."
+"Now with 40% more “delve”."
+
+Keep all other type and imagery unchanged. One full tall mobile page screenshot, portrait, all content visible, no phone hardware, browser chrome, board, extra panels, new explanatory subtext, fake fields or extra controls.

@@ -1,0 +1,24 @@
+Generation mode: built-in image_gen
+Edit target: user-supplied screenshot of frontiers-2026-slop-mobile-v3.png
+Scope: copy-only revision to the mobile UX mockup; not implemented app behavior.
+
+Use case: text-localization
+Asset type: Targeted copy edit to the attached ZKAds mobile homepage mockup.
+Input image 1: EDIT TARGET. It is the user-approved design. Preserve its exact visual identity, black angular ZKAds logo, fingerprint Save button in the top row, ivory background, typography and text sizes, yellow-green Copy prompt button, Slop Cannon artwork, object details, funny paper reading "Absolutely!", metric row and bottom controls. Do not redesign any of these.
+
+Make ONLY these requested copy changes:
+1. The introductory list now has exactly THREE bullets. Render these exact full sentences, in this order, wrapping naturally:
+• Your agent compiles a profile based on your history (no sensitive data)
+• Sends this data to a TEE to create a 1/1 product tailored to you (rendered by Venice)
+• You can merge your history with someone else’s for a shared product
+
+This replaces "custom product for you" with "1/1 product tailored to you", appends "(rendered by Venice)" to that same second bullet, and DELETES the old third bullet about an artist and 360° video. The former fourth bullet becomes the third. Do not leave a blank bullet or repeat any bullet. The characters "1/1" must be exactly one, forward slash, one.
+
+2. Under "The Slop Cannon", replace the two-line description with EXACTLY:
+Industrial-grade output.
+Now with 40% more “delve”.
+
+Remove the phrase "Homeopathic amounts of thought." entirely. The new wording is a deadpan joke about AI-generated slop.
+
+Invariants: "For an audience of one." stays unchanged. "Copy prompt" remains the only bright primary button directly below the three bullets. Fingerprint "Save" stays in the header. All other wording remains identical, including "EXAMPLE / FICTIONAL PRODUCT", "The Slop Cannon", "10,000 takes/min", "0 original thoughts", "360° preview", and "Why this exists ↗". Do not add signup subtext or any other text.
+Composition: retain a single complete tall mobile page screenshot, same width and type scale as the input. Gently reflow only the list and the sections below it to close the space freed by removing one bullet. Retain the comfortable margins and spacing; don't shrink the text or leave a hole. Keep the full cannon and all bottom controls visible. Preserve the cannon rendering and exact logo as closely as possible. No phone hardware, browser chrome, board, extra screens, texture, new colors or decorative elements. Crisp accurate copy is the most important requirement.
