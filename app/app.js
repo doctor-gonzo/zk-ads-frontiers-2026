@@ -201,13 +201,17 @@ function agentsPanel(agents, token) {
 // The landing page: the home page signed out, and the page an event's QR
 // code opens. The line to give an assistant is built once from the event
 // code (the link's, else the event's own from config.js) and the account, and
-// the same string is copied and shown. A member's assistant signs in to their
-// own account (a code they approve), so only guests get the event code.
+// the same string is copied and shown. A member's line says they have an
+// account, so their assistant signs in to it (a code they approve) rather than
+// starting a guest account with the event code, which a chat app still puts
+// in the link it gives.
 async function landing() {
   const raw = params.get('code');
   const code = eventCode();
   const member = Boolean(await live(SESSION));
-  const line = member ? `Read ${API}/skill.md and make me a ZKAds card.` : code ? `Read ${API}/skill.md and make me a ZKAds card. Event code: ${code}` : null;
+  const line = member
+    ? `Read ${API}/skill.md and make me a ZKAds card. I already have a ZKAds account.${code ? ` Event code: ${code}` : ''}`
+    : code ? `Read ${API}/skill.md and make me a ZKAds card. Event code: ${code}` : null;
   const missing = raw
     ? 'This link’s event code is not valid. Scan the event’s QR code again.'
     : location.pathname === '/event'
@@ -665,15 +669,30 @@ function confirmApprover(data) {
 async function make(agentToken) {
   // (This tab's assistant sign-in comes before a guest account left in the browser.)
   let token = agentToken ?? read(SESSION) ?? read(AGENT, sessionStorage) ?? read(GUEST);
-  // With an event code (the link skill.md gives chat apps), a stale sign-in is
-  // dropped so this browser can start a fresh guest account instead.
-  const code = agentToken ? null : inviteCodeOf(params.get('code') ?? '');
+  // With an event code (the link skill.md gives a chat app, which sends its
+  // person here with its reply), a stale sign-in is dropped so this browser
+  // can start a fresh guest account instead. (A code the chat app garbled
+  // gives way to the event's own, as on the landing page.)
+  const code = agentToken || !params.has('code') ? null : eventCode();
   if (code) token = (await live(SESSION)) ?? read(AGENT, sessionStorage) ?? (await live(GUEST));
-  if (!token && code) return startGuest(code);
-  if (!token) {
-    return show(h('h1', {}, 'Make a card'), h('p', {}, 'Sign in first. Assistants using a browser can ', h('a', { href: '/agent' }, 'sign in as an assistant'), '.'), signInButton());
+  // A chat app can put the card itself in the link, ready to make. (Another
+  // link opened in this tab changes only the fragment, so the page starts
+  // again for it.)
+  const linked = agentToken ? null : linkedCard();
+  if (!agentToken) addEventListener('hashchange', () => location.reload(), { once: true });
+  // (Nor does a page the browser keeps for Back offer a card made since.)
+  if (linked) addEventListener('pageshow', (event) => event.persisted && location.reload());
+  if (!token && !code) {
+    const lead = linked ? 'This link holds a card. Sign in to make it.' : ['Sign in first. Assistants using a browser can ', h('a', { href: '/agent' }, 'sign in as an assistant'), '.'];
+    return show(h('h1', {}, 'Make a card'), h('p', {}, lead), signInButton());
   }
+  // With only the code, the guest account starts when something is first sent
+  // from this page, never on opening the link (and not at all once the person
+  // has logged in here).
+  let starting = null;
+  const account = async () => token ?? read(SESSION) ?? (token = await (starting ??= startGuest(code).finally(() => (starting = null))));
   const reply = h('textarea', { id: 'reply', placeholder: 'Paste the whole reply here', spellcheck: 'false' });
+  if (linked) reply.value = linked.text;
   const name = h('input', { id: 'name', maxlength: '40', placeholder: 'Optional' });
   const submit = h('button', { class: 'primary' }, 'Make my card');
   const copyPrompt = h('button', { class: 'secondary' }, 'Copy the prompt');
@@ -700,53 +719,108 @@ async function make(agentToken) {
       } catch {
         // Not bare JSON: send the reply as text.
       }
-      const { data } = await api('/v1/cards', { method: 'POST', token, body: { concept, name: name.value.trim() || undefined } });
-      location.assign(`/card?id=${data.id}`);
+      const { data } = await api('/v1/cards', { method: 'POST', token: await account(), body: { concept, name: name.value.trim() || undefined } });
+      forget(LINKED, sessionStorage);
+      // (In place of this page, so Back cannot offer the same card again.)
+      location.replace(`/card?id=${data.id}`);
     }),
   );
+  // Sent here by a chat app, the person already has its card (in the link) or
+  // its reply, so the page asks for that first.
+  const steps = linked
+    ? h('p', { class: 'lead' }, ...(linked.title ? ['This link holds a card: ', h('bdi', {}, linked.title), '. Press Make my card to make it.'] : ['This link holds a card. Press Make my card to make it.']))
+    : code
+      ? h('p', { class: 'lead' }, 'Your assistant sent you here because it can’t send your card to ZK Ads itself. Paste its whole reply below, then press Make my card.')
+      : [h('ol', { class: 'steps' }, h('li', {}, 'Copy the prompt and paste it into your assistant (Claude, ChatGPT…).'), h('li', {}, 'Paste its whole reply below. Only the card concept is kept.')), h('div', { class: 'row' }, copyPrompt)];
+  if (!token && !storageWorks()) say(message, PRIVATE_WINDOW);
   show(
     h('h1', {}, 'Make a card'),
-    h('ol', { class: 'steps' }, h('li', {}, 'Copy the prompt and paste it into your assistant (Claude, ChatGPT…).'), h('li', {}, 'Paste its whole reply below. Only the card concept is kept.')),
-    h('div', { class: 'row' }, copyPrompt),
-    field('Your assistant’s reply', reply),
+    steps,
+    linked ? h('details', { class: 'fold' }, h('summary', {}, 'What your assistant wrote'), field('Your assistant’s reply', reply)) : field('Your assistant’s reply', reply),
     field('Name on the card', name),
     h('div', { class: 'row' }, submit),
     message,
-    summaryPanel(token, name),
+    !token && h('p', { class: 'muted' }, 'Making it starts a guest account with your event code; “save” at the top keeps it. Have an account? Log in at the top first.'),
+    code && !linked && [h('p', { class: 'muted' }, 'No reply yet? Copy the prompt into your assistant (Claude, ChatGPT…) first.'), h('div', { class: 'row' }, copyPrompt)],
+    !linked && summaryPanel(account, name),
   );
 }
 
-// For a chat app that cannot make web requests: this browser starts the
-// guest account from the event code (only when asked), then takes the reply.
-function startGuest(code) {
-  const start = h('button', { class: 'primary', type: 'button' }, 'Start with the event code');
-  const message = notice();
-  start.addEventListener(
-    'click',
-    busy(start, message, async () => {
-      // A guest account kept nowhere could never be saved, so none is started.
-      if (!storageWorks()) throw new Error('This browser is not keeping anything (a private window?), so a guest account started here could not be saved later. Open this page in a normal browser window.');
-      const { data } = await api('/v1/agent/guest', { method: 'POST', body: { code, agent_name: 'ZKAds web app' } });
-      write(GUEST, data.token);
-      write(CLAIM, new URL(data.claim_url).hash.slice(1));
-      guest = 'ok';
-      renderNav();
-      history.replaceState(null, '', '/make');
-      await make(data.token);
-    }),
-  );
-  show(
-    h('h1', {}, 'Make a card'),
-    h('p', { class: 'lead' }, 'For a chat app that cannot open links itself: start a guest account here with the event code, copy the prompt into your chat app, then paste its whole reply here.'),
-    h('div', { class: 'row' }, start),
-    message,
-  );
+const LINKED = 'zkads.linked-card';
+
+// The card a chat app put in its link (`#concept=` and the ZKAds JSON,
+// percent-encoded whole or only where a link needs it), or null. It is kept
+// for this tab, and the address then drops it and is marked `linked` instead
+// (a login's return keeps the query): so logging in on the way does not lose
+// it, Back cannot offer it again once made, and no later visit to /make
+// takes it back.
+function linkedCard() {
+  let raw = location.hash.startsWith('#concept=') ? location.hash.slice('#concept='.length) : '';
+  // Spaces written as "+" (as in a form) count as spaces when there are no others.
+  if (!/%20|\s/.test(raw) && raw.includes('+')) raw = raw.replace(/\+/g, '%20');
+  let text = decodeLoosely(raw);
+  if (text.trim()) {
+    write(LINKED, text, sessionStorage);
+    const marked = new URL(location.href);
+    marked.searchParams.set('linked', '1');
+    // (Left in the address only if this browser could not keep it.)
+    if (read(LINKED, sessionStorage) === text) marked.hash = '';
+    history.replaceState(null, '', marked);
+  } else text = params.has('linked') ? read(LINKED, sessionStorage) : null;
+  if (!text?.trim()) return null;
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const concept = parsed.concept ?? parsed;
+      return { text: JSON.stringify(concept, null, 2), title: typeof concept.product_name === 'string' ? cardName(concept.product_name) || null : null };
+    }
+  } catch {
+    // Not JSON after all: it goes as text, and ZKAds looks for the JSON in it.
+  }
+  return { text, title: null };
+}
+
+// A product name as the server keeps it: no control or invisible format
+// characters (zero-width joiners stay, for emoji), at most 48 characters.
+function cardName(value) {
+  return Array.from(value.replace(/\p{Cc}+/gu, ' ').replace(/(?!‍)\p{Cf}/gu, '').replace(/\s+/g, ' ').trim()).slice(0, 48).join('');
+}
+
+// Each run of %XX is decoded whole (one character can take several), and a
+// broken run is kept as it is.
+function decodeLoosely(value) {
+  return value.replace(/(%[0-9a-f]{2})+/gi, (run) => {
+    try {
+      return decodeURIComponent(run);
+    } catch {
+      return run;
+    }
+  });
+}
+
+const PRIVATE_WINDOW = 'This browser is not keeping anything (a private window?), so a guest account started here could not be saved later. Open this page in a normal browser window.';
+
+// For a chat app that cannot make web requests: this browser starts the guest
+// account from the event code, kept here so that it can be saved later.
+async function startGuest(code) {
+  // One started meanwhile (in another tab) is kept, not replaced.
+  const other = await live(GUEST);
+  if (other) return other;
+  // A guest account kept nowhere could never be saved, so none is started.
+  if (!storageWorks()) throw new Error(PRIVATE_WINDOW);
+  const { data } = await api('/v1/agent/guest', { method: 'POST', body: { code, agent_name: 'ZKAds web app' } });
+  write(GUEST, data.token);
+  write(CLAIM, new URL(data.claim_url).hash.slice(1));
+  guest = 'ok';
+  renderNav();
+  return data.token;
 }
 
 // The fallback: the assistant only summarises, and the enclave writes the
 // concept. Given a waiting card's id, it finishes that card instead of
-// starting one.
-function summaryPanel(token, name, waitingId = null) {
+// starting one. `account` gives the sign-in (starting a guest account if
+// that is still to come).
+function summaryPanel(account, name, waitingId = null) {
   const summary = h('textarea', { id: 'draft-summary', placeholder: 'Paste the summary here', spellcheck: 'false' });
   const copyPrompt = h('button', { class: 'secondary' }, 'Copy the summary prompt');
   const submit = h('button', { class: 'secondary' }, 'Seal it and make my card');
@@ -765,6 +839,7 @@ function summaryPanel(token, name, waitingId = null) {
     'click',
     busy(submit, message, async () => {
       if (summary.value.trim().length < 40) throw new Error('Paste the summary your assistant wrote first.');
+      const token = await account();
       const { upload } = draftId
         ? (await api(`/v1/cards/${draftId}/upload`, { method: 'POST', token })).data
         : await api('/v1/cards/from-summary', { method: 'POST', token, body: { name: name?.value.trim() || undefined } }).then(({ data }) => ((draftId = data.id), data));
@@ -874,7 +949,7 @@ async function cardView() {
       title.textContent = 'Waiting for your summary';
       list.hidden = true;
       const token = read(SESSION) ?? read(AGENT, sessionStorage) ?? read(GUEST);
-      return extra.replaceChildren(token ? summaryPanel(token, null, id) : signInButton());
+      return extra.replaceChildren(token ? summaryPanel(async () => token, null, id) : signInButton());
     }
     setTimeout(tick, 4000);
   };

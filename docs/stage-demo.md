@@ -97,11 +97,16 @@ An assistant that can make web requests (Claude Code, Codex, Hermes) signs
 itself in as a guest with the code and makes the card: no account and no
 approval. It then gives its person a link that saves the account with a
 passkey, which fusing needs. The caret on Copy prompt unfolds "read prompt",
-which shows the whole line first. For someone with only a chat app, skill.md has the assistant send
-them to `/make?code=…`: the page starts the guest account in their browser
-and takes the assistant's reply, and "save" in the header adds the passkey
-later. People can also create an account with the code straight away
-("login", then "Create": a passkey, as with an invite).
+which shows the whole line first. For someone with only a chat app, skill.md
+has the assistant put the card itself in a `/make?code=…#concept=…` link:
+tapping it opens their card, and Make my card makes it, starting the guest
+account in their browser (or using their account if they are logged in
+there). Pasting the assistant's whole reply at `/make?code=…` still works,
+and "save" in the header adds the passkey later. People can also create an
+account with the code straight away ("login", then "Create": a passkey, as
+with an invite). A signed-in member's line adds "I already have a ZKAds
+account", so their assistant signs in to that account (a code they approve)
+instead of starting a guest one.
 
 The site's own address works without the link too: its line, and Create,
 use the event's code from `ZKADS_EVENT_CODE` in `app/config.js` (change or

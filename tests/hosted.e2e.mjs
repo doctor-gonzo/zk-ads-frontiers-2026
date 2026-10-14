@@ -931,13 +931,46 @@ test('an event code: an assistant starts a guest account in one step, and its pe
     assert.deepEqual(saved.agents, [], 'saving ended the guest sign-in');
     assert.equal((await me(guest.token)).status, 401, 'so whoever held it keeps nothing');
     assert.equal((await post('/v1/auth/claim/options', { claim: claimCode })).status, 404, 'a claim link works once');
-    // Signed in already: the claim page says saving would switch accounts, and the event page's line leaves the code out.
+    // Signed in already: the claim page says saving would switch accounts, and the event page's line says there is an
+    // account (so an assistant signs in to it) and still carries the code (for a chat app's link).
     await page.goto(second.claim_url);
     await page.getByText('You are signed in to another ZKAds account in this browser.').waitFor();
     await page.goto(event.event_url);
     await page.getByRole('button', { name: 'Show the whole prompt' }).click();
     await page.getByRole('button', { name: 'read prompt' }).click();
-    assert.equal(await page.getByRole('dialog', { name: 'Prompt' }).locator('.prompt-text').textContent(), `Read ${site}/skill.md and make me a ZKAds card.`);
+    assert.equal(await page.getByRole('dialog', { name: 'Prompt' }).locator('.prompt-text').textContent(), `Read ${site}/skill.md and make me a ZKAds card. I already have a ZKAds account. Event code: ${event.code}`);
+    // A chat app's link can carry the card itself, its JSON percent-encoded whole or only where a link needs it
+    // (spaces, "%" and brackets). Opening it makes nothing; for a member logged in here, Make my card makes it in
+    // their own account (no guest account, so no use of the code).
+    const linkedConcept = { ...sampleConcept(), product_name: 'The Linked Terrarium (Mk II)', tagline: 'Says "grow" & means it, 100% of the time.' };
+    const cardsBefore = (await (await me(session)).json()).cards.length;
+    await page.goto(`${site}/make?code=${event.code}#concept=${encodeURIComponent(JSON.stringify({ ...linkedConcept, product_name: 'The Encoded Terrarium' }))}`);
+    await page.getByText('This link holds a card: The Encoded Terrarium. Press Make my card to make it.').waitFor();
+    await page.goto(`${site}/about`);
+    const lightly = JSON.stringify(linkedConcept).replace(/%/g, '%25').replace(/ /g, '%20').replace(/\\/g, '%5C').replace(/&/g, '%26').replace(/\(/g, '%28').replace(/\)/g, '%29');
+    await page.goto(`${site}/make?code=${event.code}#concept=${lightly}`);
+    const ready = 'This link holds a card: The Linked Terrarium (Mk II). Press Make my card to make it.';
+    await page.getByText(ready).waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('linked'), '1', 'the address is marked, so a login’s return finds the card');
+    assert.equal(new URL(page.url()).hash, '', 'and the card leaves the address once kept, so Back cannot offer it again');
+    assert.equal(await page.locator('#reply').isVisible(), false, 'the card’s text waits behind “What your assistant wrote”');
+    assert.equal(JSON.parse(await page.locator('#reply').inputValue()).tagline, linkedConcept.tagline);
+    assert.equal(await page.getByText('Making it starts a guest account').count(), 0);
+    // Coming back without the fragment (as after logging in) finds the card; a plain visit does not.
+    await page.goto(`${site}/make?code=${event.code}&linked=1`);
+    await page.getByText(ready).waitFor();
+    await page.goto(`${site}/make?code=${event.code}`);
+    await page.getByText('Your assistant sent you here because it can’t send your card to ZK Ads itself.').waitFor();
+    assert.equal((await (await me(session)).json()).cards.length, cardsBefore, 'opening links made nothing');
+    await page.goto(`${site}/make?code=${event.code}&linked=1`);
+    await page.getByText(ready).waitFor();
+    await page.getByRole('button', { name: 'Make my card', exact: true }).click();
+    await page.waitForURL((url) => url.pathname === '/card');
+    const linkedId = new URL(page.url()).searchParams.get('id');
+    const afterLink = (await (await me(session)).json()).cards;
+    assert.deepEqual([afterLink.length, afterLink[0].id, afterLink[0].product_name], [cardsBefore + 1, linkedId, 'The Linked Terrarium (Mk II)']);
+    assert.equal(await page.evaluate(() => sessionStorage.getItem('zkads.linked-card')), null, 'the link’s card is not kept once made');
+    await untilReady(linkedId);
 
     // A phone: the event page's line carries the event code, and the copied and shown lines are the same.
     const phoneContext = await browser.newContext();
@@ -960,18 +993,24 @@ test('an event code: an assistant starts a guest account in one step, and its pe
     // Neither copying nor reading starts an account, so the header still says login.
     assert.deepEqual(await phone.evaluate(() => ['zkads.guest', 'zkads.session'].map((key) => localStorage.getItem(key))), [null, null]);
     await phone.getByRole('button', { name: 'login', exact: true }).waitFor();
-    // With only a chat app, the link skill.md gives starts the guest account in the browser (getting past a stale one).
+    // With only a chat app, the link skill.md gives asks at once for the reply the person already has. Opening it starts
+    // nothing; making the card starts the guest account in the browser (getting past a stale one).
     await phone.evaluate(() => (localStorage.setItem('zkads.guest', 'zka_stale'), localStorage.setItem('zkads.claim', 'stale')));
     await phone.goto(`${site}/make?code=${event.code}`);
-    await phone.getByRole('button', { name: 'Start with the event code' }).click();
-    await phone.getByRole('heading', { name: 'Make a card' }).waitFor();
+    await phone.getByText('Your assistant sent you here because it can’t send your card to ZK Ads itself.').waitFor();
+    assert.equal(await phone.getByRole('button', { name: 'Start with the event code' }).count(), 0);
+    assert.equal(await phone.evaluate(() => localStorage.getItem('zkads.guest')), null, 'opening the link starts no account, and the stale one is gone');
+    await phone.getByRole('button', { name: 'login', exact: true }).waitFor();
+    await phone.getByRole('button', { name: 'Make my card', exact: true }).click();
+    await phone.getByText('Paste your assistant’s reply first.').waitFor();
+    assert.equal(await phone.evaluate(() => localStorage.getItem('zkads.guest')), null, 'an empty reply starts no account');
+    await phone.locator('#reply').fill(`Here it is!\n\n\`\`\`json\n${JSON.stringify({ ...sampleConcept(), product_name: 'The Phone Terrarium' })}\n\`\`\`\n`);
+    await phone.getByRole('button', { name: 'Make my card', exact: true }).click();
+    await phone.getByRole('heading', { name: 'The Phone Terrarium' }).waitFor({ timeout: 150_000 });
     await phone.getByRole('button', { name: 'save', exact: true }).waitFor();
     const browserGuest = await phone.evaluate(() => localStorage.getItem('zkads.guest'));
     assert.match(browserGuest, /^zka_/);
     assert.notEqual(browserGuest, 'zka_stale');
-    await phone.locator('#reply').fill(`Here it is!\n\n\`\`\`json\n${JSON.stringify({ ...sampleConcept(), product_name: 'The Phone Terrarium' })}\n\`\`\`\n`);
-    await phone.getByRole('button', { name: 'Make my card', exact: true }).click();
-    await phone.getByRole('heading', { name: 'The Phone Terrarium' }).waitFor({ timeout: 150_000 });
     // Finding partners asks a guest to save first, then carries on there.
     const phoneCard = new URL(phone.url()).searchParams.get('id');
     await phone.goto(`${site}/match?card=${phoneCard}`);
@@ -1196,6 +1235,10 @@ test('the landing page, its example and About work signed out, and start nothing
     await page.goto(`${site}/event?code=ZK-ABCD-2345`);
     await page.getByRole('heading', { name: 'For an audience of one.' }).waitFor();
     assert.equal(await page.locator('.example-link').isVisible(), false);
+    // A chat app's link asks for its reply at once, even with a code it garbled (the event's own stands in).
+    await page.goto(`${site}/make?code=ZK-0OO0-1IL1`);
+    await page.getByText('Your assistant sent you here because it can’t send your card to ZK Ads itself.').waitFor();
+    await page.locator('#reply').waitFor();
     assert.deepEqual(writes, [], 'nothing here starts an account or a job');
     assert.deepEqual(await page.evaluate(() => Object.keys(localStorage)), []);
   } finally {

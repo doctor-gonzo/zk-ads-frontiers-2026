@@ -45,10 +45,19 @@ way, use the sign-in code below instead (an invite code is for joining on
 the site).
 
 If you cannot make web requests at all (a chat app that can only read
-pages), give the person `{{APP}}/make?code=ZK-ABCD-2345` with their event
-code instead: their browser starts the guest account there. Write the
-concept with the brief (step 2) and tell them to paste your whole reply on
-that page.
+pages), put the card in a link instead, so tapping it makes the card. Write
+the concept with the brief (step 2), then give the person one link:
+`{{APP}}/make?code=ZK-ABCD-2345#concept=` followed by your ZKAds JSON object
+on one line, writing each `%` as `%25`, each space as `%20`, each `\` as
+`%5C`, each `&` as `%26`, and `(` and `)` as `%28` and `%29`
+(percent-encoding all of it, brackets included, works too). Use their event
+code in place of `ZK-ABCD-2345`; if they gave none, leave out
+`?code=ZK-ABCD-2345`, and the page asks them to log in. Show it as a link,
+such as `[Make my card](…)`. The page shows their card and makes it when
+they press Make my card: in their account if they are logged in there, or
+else in a guest account their browser starts with the event code. Also tell
+them that if the link does not open their card, they can open the same
+address without `#concept=…` and paste your whole reply there.
 
 **With a sign-in code.** Otherwise ask for a sign-in code, naming yourself so
 the person recognises you:
